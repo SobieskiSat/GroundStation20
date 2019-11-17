@@ -1,9 +1,9 @@
 # GroundStation20
 
-Software for radio control from a Computer.
-Satellite firmare for this software: https://github.com/SobieskiSat/Satellite20
+Software for radio control from a Computer.  
+Satellite firmare for this software: https://github.com/SobieskiSat/Satellite20  
 
-Details: /n
-Type: Windows program (.exe) /n
-Project IDE: MS Visual Studio /n
+Details:  
+Type: Windows program (.exe)  
+Project IDE: MS Visual Studio  
 Language: C#
