@@ -1,0 +1,10 @@
+C:\Users\Damian\Desktop\CanSat\GroundStation20\motorController\bin\Release\motorController.exe.config
+C:\Users\Damian\Desktop\CanSat\GroundStation20\motorController\bin\Release\motorController.exe
+C:\Users\Damian\Desktop\CanSat\GroundStation20\motorController\bin\Release\motorController.pdb
+C:\Users\Damian\Desktop\CanSat\GroundStation20\motorController\obj\Release\motorController.csprojResolveAssemblyReference.cache
+C:\Users\Damian\Desktop\CanSat\GroundStation20\motorController\obj\Release\motorController.Form1.resources
+C:\Users\Damian\Desktop\CanSat\GroundStation20\motorController\obj\Release\motorController.Properties.Resources.resources
+C:\Users\Damian\Desktop\CanSat\GroundStation20\motorController\obj\Release\motorController.csproj.GenerateResource.cache
+C:\Users\Damian\Desktop\CanSat\GroundStation20\motorController\obj\Release\motorController.csproj.CoreCompileInputs.cache
+C:\Users\Damian\Desktop\CanSat\GroundStation20\motorController\obj\Release\motorController.exe
+C:\Users\Damian\Desktop\CanSat\GroundStation20\motorController\obj\Release\motorController.pdb
