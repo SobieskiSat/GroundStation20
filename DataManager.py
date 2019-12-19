@@ -5,6 +5,22 @@ class Data
 class DataManager:
     def __init__(self, dir = 'readings/', file_name = 'reading', max = 500):
         self.data = []
+        self.max = max
+        self.dir = dir
+        self.file_name = file_name
+        self.file = open()
+
+    @property
+    def file_dir(self):
+        return self.dir+self.file_name+'.txt'
+
+    def append(self, value):
+        if len(self.data) >= self.max:
+            self.data.pop(0)
+        self.data.append(value)
+
+    def __write_data(self, data):
+        pass
 
 class MemoryManager:
     def __init__(self):
