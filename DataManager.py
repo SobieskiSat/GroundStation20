@@ -1,31 +1,52 @@
 import yaml
 import os
-class Data
+import time
+
 
 class DataManager:
     def __init__(self, dir = 'readings/', file_name = 'reading', max = 500):
         self.data = []
         self.max = max
         self.dir = dir
+        #Check if directry exists, if not create it
+        if not os.path.isdir(dir):
+            try:
+                os.mkdir(dir)
+            except Exception as e:
+                print('[DM] mkdir:', e)
+
         self.file_name = file_name
-        self.file = open()
+        self.file = open(self.file_dir, 'a+')
 
     @property
     def file_dir(self):
         return self.dir+self.file_name+'.txt'
 
     def append(self, value):
+        timestamp = time.time()
         if len(self.data) >= self.max:
             self.data.pop(0)
-        self.data.append(value)
+        self.data.append({'time':timestamp, 'value':value})
+        self.__write_data('{}@{}\n'.format(timestamp, value))
 
     def __write_data(self, data):
-        pass
+        self.file.write(data)
+        self.file.flush()
+        os.fsync(self.file.fileno())
+
+    def __del__(self):
+        self.file.write('closing')
+        self.file.flush()
+        os.fsync(self.file.fileno())
+        try:
+            self.file.close()
+        except Exception as e:
+            print('[DM]', e)
 
 class MemoryManager:
     def __init__(self):
         self.conf = ConfigData()
-        self.mem = Memory()
+        self.mem = DynamicMemory()
         self.__all = (self.conf, self.mem)
 
     def __getitem__(self, key):
@@ -92,7 +113,3 @@ class ConfigData:
 
     def __contains__(self, key):
         return key in self.conf
-
-dm = DataManager()
-dm.conf.change_file('test2.yml')
-print(dm['xd'])

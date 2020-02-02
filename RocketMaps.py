@@ -34,7 +34,7 @@ class Map(QtWebEngineWidgets.QWebEngineView):
         self.page().runJavaScript(comand)
 
 
-app=QApplication(sys.argv)
-win=RocketMap()
-win.show()
-app.exec_()
+# app=QApplication(sys.argv)
+# win=RocketMap()
+# win.show()
+# app.exec_()
