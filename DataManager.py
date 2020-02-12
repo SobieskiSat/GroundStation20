@@ -14,13 +14,18 @@ class DataManager:
                 os.mkdir(dir)
             except Exception as e:
                 print('[DM] mkdir:', e)
-
-        self.file_name = file_name
+        self.file_name_prefix = file_name
+        self.obtain_file_num()
         self.file = open(self.file_dir, 'a+')
 
     @property
     def file_dir(self):
-        return self.dir+self.file_name+'.txt'
+        return self.dir+self.file_name_prefix+'_'+str(self.file_num)+'.txt'
+
+    def obtain_file_num(self):
+        self.file_num = 1
+        while os.path.isfile(self.file_dir):
+            self.file_num += 1
 
     def append(self, value):
         timestamp = time.time()
@@ -35,19 +40,21 @@ class DataManager:
         os.fsync(self.file.fileno())
 
     def __del__(self):
-        self.file.write('closing')
-        self.file.flush()
         os.fsync(self.file.fileno())
         try:
             self.file.close()
         except Exception as e:
             print('[DM]', e)
 
+    def get_last(self, num = 100):
+        return self.data[-num:]
+
 class MemoryManager:
     def __init__(self):
         self.conf = ConfigData()
-        self.mem = DynamicMemory()
-        self.__all = (self.conf, self.mem)
+        self.dyn = DynamicMemory()
+        self.dm = DataManager()
+        self.__all = (self.conf, self.dyn)
 
     def __getitem__(self, key):
         for d in self.__all:
