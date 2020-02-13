@@ -66,7 +66,7 @@ class DynamicMemory:
         self.data = {}
 
     def __getitem__(self, key):
-        print(self.data)
+        #print(self.data)
         return self.data[key]
 
     def __setitem__(self, key, value):

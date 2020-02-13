@@ -40,6 +40,7 @@ class LiveFlightLogic(QRunnable):
         self.up_key = False
         self.down_key = False
         self.power = 0
+        self.servo = 0xAA
 
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_Left:
@@ -50,6 +51,9 @@ class LiveFlightLogic(QRunnable):
             self.up_key = True
         elif event.key() == Qt.Key_Down:
             self.down_key = True
+        elif event.key() == Qt.Key_D:
+            self.servo = 0x55
+
 
     def keyReleaseEvent(self, event):
         if event.key() == Qt.Key_Left:
@@ -88,14 +92,14 @@ class LiveFlightLogic(QRunnable):
             l_out = int(self.left_motor*self.power/100)*2
             r_out = int(self.right_motor*self.power/100)*2
             print(r_out, l_out)
-            motbytes = bytes([0xFF, l_out, r_out])
+            motbytes = bytes([0xFF, l_out, r_out, self.servo])
             #print(motbytes)
             try:
                 self.parent.ser.writeline(motbytes)
             except Exception as e:
                 pass
             #print(self.parent.mm.dm.get_last(3))
-            time.sleep(0.001)
+            time.sleep(0.1)
 
 
     def newDataCallback(self, data):
