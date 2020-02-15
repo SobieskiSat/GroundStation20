@@ -29,23 +29,13 @@ class MainWindow(QMainWindow):
         self.main_grid.addWidget(self.main_splitter, 1, 1)
 
         #left_widget
-        self.temp = QLabel('xd')
+        self.temp = QLabel('Label1')
         self.left_grid.addWidget(self.temp, 1, 1)
 
         #right_widget
         self.right_splitter = QSplitter(Qt.Vertical)
         self.rocket_map = RocketMap()
         self.right_splitter.addWidget(self.rocket_map)
-        self.temp2 = QLabel('działa?')
+        self.temp2 = QLabel('Label2')
         self.right_splitter.addWidget(self.temp2)
         self.right_grid.addWidget(self.right_splitter, 1, 1)
-
-
-
-
-'''
-app=QApplication(sys.argv)
-win=MainWindow()
-win.show()
-app.exec_()
-'''

@@ -18,7 +18,8 @@ class LiveFlight():
         self.threadpool = QThreadPool()
         self.log = LiveFlightLogic(self)
         # Communication Thread
-        self.ser = SerialCommunicator('COM7')
+        self.ser = SerialCommunicator('COM9')
+        time.sleep(1)
         self.ser.setOnReadCallback(self.log.newDataCallback)
         self.threadpool.start(self.ser)
         # main window
@@ -86,25 +87,18 @@ class LiveFlightLogic(QRunnable):
             self.left_motor, self.right_motor, self.power)
             self.parent.main_window.temp2.setText(temp_text)
 
-
-            #line = '{}{}\n'.format(self.left_motor, self.right_motor)
-            #self.parent.ser.writeline(bytes(line, encoding='utf8'))
             l_out = int(self.left_motor*self.power/100)*2
             r_out = int(self.right_motor*self.power/100)*2
-            print(r_out, l_out)
             motbytes = bytes([0xFF, l_out, r_out, self.servo])
-            #print(motbytes)
             try:
                 self.parent.ser.writeline(motbytes)
             except Exception as e:
                 pass
-            #print(self.parent.mm.dm.get_last(3))
             time.sleep(0.1)
 
 
     def newDataCallback(self, data):
-        self.parent.main_window.temp.setText(data)
-        #print(data)
+        print(data)
         self.parent.mm.dm.append(data)
 
 lf = LiveFlight()
