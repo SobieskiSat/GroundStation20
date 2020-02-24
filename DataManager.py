@@ -8,6 +8,7 @@ class DataManager:
         self.data = []
         self.max = max
         self.dir = dir
+        self.data_processor = DataProcessor()
         #Check if directry exists, if not create it
         if not os.path.isdir(dir):
             try:
@@ -31,7 +32,13 @@ class DataManager:
         timestamp = time.time()
         if len(self.data) >= self.max:
             self.data.pop(0)
-        self.data.append({'time':timestamp, 'value':value})
+        try:
+            new_data = str(timestamp)+'_'+str(value)
+            new_data = self.data_processor.interpreter(new_data)
+        except Exception as e:
+            print('[DM]', e)
+
+        self.data.append({'time':timestamp, 'raw':value, 'processed':new_data})
         self.__write_data('{}@{}\n'.format(timestamp, value))
 
     def __write_data(self, data):
@@ -48,6 +55,35 @@ class DataManager:
 
     def get_last(self, num = 100):
         return self.data[-num:]
+
+    def new_data_arranger(self, *attr):
+        class DataArranger:
+            def __init__(self, df, names):
+                self.data_func = df
+                self.names = names
+
+            def get_data(self, num = 100):
+                data = self.data_func(num)
+                ans = []
+                for n in self.names:
+                    new = []
+                    for d in data:
+                        new.append(d['processed'][n])
+                    ans.append(new)
+                return ans
+        da = DataArranger(self.get_last, attr)
+        return da.get_data
+
+
+
+class DataProcessor:
+    def interpreter(self, data):
+        structure=('time','rssi','x','y', 'h', 'temperature', 'pressure', 'pm25', 'pm10')
+        new_data = data.split('_')
+        new_data = list(map(float, new_data))
+        return dict(zip(structure, new_data))
+
+
 
 class MemoryManager:
     def __init__(self):

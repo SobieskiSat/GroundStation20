@@ -40,7 +40,7 @@
 		}
 	var url_string = window.location.href;
 	var params = getQueryParams();
-	var mymap = L.map('mapid').setView([51, 0], 13);
+	var mymap = L.map('mapid').setView([50.06, 19.93], 13);
 
 	L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token=pk.eyJ1IjoidWhqYWxka293b2FkIiwiYSI6ImNqcHp5NHJicTBmbG80MXBsMjZsYmI5czIifQ.tzEtn-OxzSjl0V0URqdU1A', {
 		maxZoom: params.maxZoom,
@@ -54,7 +54,7 @@
 	var pathLayer = L.layerGroup().addTo(mymap);
 	function addPointToPath(x, y, color){
 		pathLayer.addLayer(L.circle([x,y],{
-			radius : params['pointRadius'],
+			radius : 10,
 			color : color
 		}));
 	}
@@ -80,8 +80,6 @@
   }
 	mymap.on('click', onMapClick);
   window.addEventListener('resize', onWindowResize);
-
-
 
 </script>
 </body>

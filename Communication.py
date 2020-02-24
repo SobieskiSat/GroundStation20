@@ -16,7 +16,8 @@ class SerialCommunicator(QRunnable):
     def readline(self):
         try:
             data=self.serial.readline()
-            return str(data)[2:-3]
+            #return data
+            return str(data)[2:-4]
         except Exception as e:
             print('[Serial]', e)
 

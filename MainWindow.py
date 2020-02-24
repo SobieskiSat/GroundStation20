@@ -3,6 +3,7 @@ QWidget, QLabel)
 from PyQt5.QtCore import Qt
 import sys
 from RocketMaps import RocketMap
+from Widgets import Plot
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -31,6 +32,8 @@ class MainWindow(QMainWindow):
         #left_widget
         self.temp = QLabel('Label1')
         self.left_grid.addWidget(self.temp, 1, 1)
+        self.plot1 = Plot()
+        self.left_grid.addWidget(self.plot1, 2, 1)
 
         #right_widget
         self.right_splitter = QSplitter(Qt.Vertical)

@@ -17,8 +17,9 @@ class LiveFlight():
         # Logic threads
         self.threadpool = QThreadPool()
         self.log = LiveFlightLogic(self)
+        self.gui = LiveFlightGui(self)
         # Communication Thread
-        self.ser = SerialCommunicator('COM9')
+        self.ser = SerialCommunicator('COM11')
         time.sleep(1)
         self.ser.setOnReadCallback(self.log.newDataCallback)
         self.threadpool.start(self.ser)
@@ -27,7 +28,22 @@ class LiveFlight():
         self.main_window.show()
         # running it
         self.threadpool.start(self.log)
+        self.threadpool.start(self.gui)
         self.app.exec_()
+
+class LiveFlightGui(QRunnable):
+    def __init__(self, parent):
+        super().__init__()
+        self.parent = parent
+
+
+    @pyqtSlot()
+    def run(self):
+        self.da = self.parent.mm.dm.new_data_arranger('h', 'temperature')
+        self.parent.main_window.plot1.start_data_ploter(self.da)
+        while True:
+            self.parent.main_window.plot1.update()
+            time.sleep(0.2)
 
 class LiveFlightLogic(QRunnable):
     def __init__(self, parent):
@@ -71,6 +87,7 @@ class LiveFlightLogic(QRunnable):
         self.parent.main_window.keyPressEvent = self.keyPressEvent
         self.parent.main_window.keyReleaseEvent = self.keyReleaseEvent
         step = 5
+        self.parent.main_window.rocket_map.map_view.addPointToPath(50.065, 19.943, '#456456')
         while True:
             if self.left_key and self.left_motor<=100-step:
                 self.left_motor+=step
@@ -96,10 +113,17 @@ class LiveFlightLogic(QRunnable):
                 pass
             time.sleep(0.1)
 
-
     def newDataCallback(self, data):
-        print(data)
         self.parent.mm.dm.append(data)
-
+        #print(self.parent.mm.dm.get_last(10))
+        '''
+        data = data.split('_')
+        try:
+            self.parent.main_window.rocket_map.map_view.addPointToPath(
+            data[2], data[3], '#654321'
+            )
+        except Exception as e:
+            pass
+        '''
 lf = LiveFlight()
 lf.run()
