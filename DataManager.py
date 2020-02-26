@@ -40,6 +40,7 @@ class DataManager:
 
         self.data.append({'time':timestamp, 'raw':value, 'processed':new_data})
         self.__write_data('{}@{}\n'.format(timestamp, value))
+        return new_data
 
     def __write_data(self, data):
         self.file.write(data)
@@ -77,17 +78,26 @@ class DataManager:
 
 
 class DataProcessor:
+    def __init__(self):
+        self.structure = None
+
+    def set_structure(self, structure):
+        self.structure = structure
+
     def interpreter(self, data):
-        structure=('time','rssi','x','y', 'h', 'temperature', 'pressure', 'pm25', 'pm10')
+        if not self.structure:
+            return {}
+        #structure=('time','rssi','x','y', 'h', 'temperature', 'pressure', 'pm25', 'pm10')
         new_data = data.split('_')
         new_data = list(map(float, new_data))
+        structure = self.structure
         return dict(zip(structure, new_data))
 
 
 
 class MemoryManager:
     def __init__(self):
-        self.conf = ConfigData()
+        self.conf = ConfigData('config.yaml')
         self.dyn = DynamicMemory()
         self.dm = DataManager()
         self.__all = (self.conf, self.dyn)
@@ -131,7 +141,7 @@ class ConfigData:
                 with open(self.file_dir, 'w') as yamlfile:
                     yaml.dump(self.conf, yamlfile)
             except Exception as e:
-                print('Could not save conf', e)
+                print('[CONF]Could not save conf', e)
 
     def read_config(self):
         if self.file_dir:
@@ -140,7 +150,7 @@ class ConfigData:
                     self.conf.update(yaml.load(yamlfile))
                 return self.conf
             except Exception as e:
-                print('Could not load conf', e)
+                print('[CONF]Could not load conf', e)
 
         if self.default_file:
             try:
@@ -148,7 +158,7 @@ class ConfigData:
                     self.conf.update(yaml.load(yamlfile))
                 return self.conf
             except Exception as e:
-                print('Could not load default conf', e)
+                print('[CONF]Could not load default conf', e)
 
     def change_file(self, file):
         self.file_dir = file

@@ -1,4 +1,5 @@
 from serial import Serial
+import serial
 from PyQt5.QtCore import QRunnable, pyqtSlot
 
 class SerialCommunicator(QRunnable):
@@ -37,3 +38,16 @@ class SerialCommunicator(QRunnable):
                 new = self.readline()
                 for f in self.callbackFuns:
                     f(new)
+
+class DeviceSearcher:
+    def find_device_port(self):
+        ports = serial.tools.list_ports.comports(include_links=False)
+        print(ports)
+    def tell_name(self):
+        port = 'COM10'
+        ser = Serial(port)
+        print(ser.portstr)
+        print(ser.name)
+
+#ds = DeviceSearcher()
+#ds.find_device_port()

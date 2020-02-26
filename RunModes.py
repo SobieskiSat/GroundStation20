@@ -14,6 +14,7 @@ class LiveFlight():
     def run(self):
         self.app = QApplication(sys.argv)
         self.mm = MemoryManager()
+        self.mm.dm.data_processor.set_structure(self.mm.conf['structure'])
         # Logic threads
         self.threadpool = QThreadPool()
         self.log = LiveFlightLogic(self)
@@ -87,7 +88,6 @@ class LiveFlightLogic(QRunnable):
         self.parent.main_window.keyPressEvent = self.keyPressEvent
         self.parent.main_window.keyReleaseEvent = self.keyReleaseEvent
         step = 5
-        self.parent.main_window.rocket_map.map_view.addPointToPath(50.065, 19.943, '#456456')
         while True:
             if self.left_key and self.left_motor<=100-step:
                 self.left_motor+=step
@@ -114,16 +114,9 @@ class LiveFlightLogic(QRunnable):
             time.sleep(0.1)
 
     def newDataCallback(self, data):
-        self.parent.mm.dm.append(data)
-        #print(self.parent.mm.dm.get_last(10))
-        '''
-        data = data.split('_')
-        try:
-            self.parent.main_window.rocket_map.map_view.addPointToPath(
-            data[2], data[3], '#654321'
-            )
-        except Exception as e:
-            pass
-        '''
+        new_data = self.parent.mm.dm.append(data)
+        self.parent.main_window.rocket_map.map_view.addPointToPath(
+        new_data['x'], new_data['y'], '#123456'
+        )
 lf = LiveFlight()
 lf.run()

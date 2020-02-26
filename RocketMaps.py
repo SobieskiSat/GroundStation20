@@ -31,7 +31,10 @@ class Map(QtWebEngineWidgets.QWebEngineView):
     def addPointToPath(self, x, y, color):
         comand = 'addPointToPath("{}", "{}", "{}");'.format(x, y, color)
         #print(comand)
-        self.page().runJavaScript(comand)
+        try:
+            self.page().runJavaScript(comand)
+        except Exception as e:
+            print('[MAP]', e)
 
 
 # app=QApplication(sys.argv)
