@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import (QMainWindow, QApplication, QSplitter, QGridLayout,
-QWidget, QLabel)
+QWidget, QLabel, QAction)
 from PyQt5.QtCore import Qt
 import sys
 from RocketMaps import RocketMap
@@ -16,6 +16,7 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(self.main_widget)
         self.main_grid = QGridLayout()
         self.main_widget.setLayout(self.main_grid)
+        self.initToolbar()
 
         #main_grid and main main_splitter
         self.left_grid = QGridLayout()
@@ -42,3 +43,11 @@ class MainWindow(QMainWindow):
         self.temp2 = QLabel('Label2')
         self.right_splitter.addWidget(self.temp2)
         self.right_grid.addWidget(self.right_splitter, 1, 1)
+        self.port_status_label = QLabel('PortNotWorking')
+        self.right_grid.addWidget(self.port_status_label, 2, 1)
+
+    def initToolbar(self):
+        menubar = self.menuBar()
+        fileMenu = menubar.addMenu('&File')
+        self.find_arduino_menu = QAction('&Find Kit')
+        fileMenu.addAction(self.find_arduino_menu)

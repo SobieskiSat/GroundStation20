@@ -84,7 +84,7 @@ class DataProcessor:
     def set_structure(self, structure):
         self.structure = structure
 
-    def interpreter(self, data):
+    def interpreter_old(self, data):
         if not self.structure:
             return {}
         #structure=('time','rssi','x','y', 'h', 'temperature', 'pressure', 'pm25', 'pm10')
@@ -93,7 +93,14 @@ class DataProcessor:
         structure = self.structure
         return dict(zip(structure, new_data))
 
-
+    def interpreter(self, data):
+        ans = {}
+        while data != '':
+            big_c = str(data[0]).upper()
+            res, data = (data[1:]).split(big_c)
+            if big_c in self.structure:
+                ans[self.structure[big_c]] = res
+        return ans
 
 class MemoryManager:
     def __init__(self):
@@ -166,3 +173,8 @@ class ConfigData:
 
     def __contains__(self, key):
         return key in self.conf
+'''
+dp = DataProcessor()
+dp.set_structure({'T':'temperature', 'P':'pressure'})
+print(dp.interpreter('t12Tp17P'))
+'''
