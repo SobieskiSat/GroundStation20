@@ -103,7 +103,7 @@ class DataProcessor:
             big_c = str(data[0]).upper()
             res, data = (data[1:]).split(big_c)
             if big_c in self.structure:
-                ans[self.structure[big_c]] = res
+                ans[self.structure[big_c]] = float(res)
         self.last_data = ans.copy()
         return ans
 
