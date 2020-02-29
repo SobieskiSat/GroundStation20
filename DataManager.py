@@ -33,7 +33,7 @@ class DataManager:
         if len(self.data) >= self.max:
             self.data.pop(0)
         try:
-            new_data = str(timestamp)+'_'+str(value)
+            new_data = '@'+str(timestamp)+'@'+str(value)
             new_data = self.data_processor.interpreter(new_data)
         except Exception as e:
             print('[DM]', e)
@@ -69,7 +69,8 @@ class DataManager:
                 for n in self.names:
                     new = []
                     for d in data:
-                        new.append(d['processed'][n])
+                        if n in d['processed']:
+                            new.append(d['processed'][n])
                     ans.append(new)
                 return ans
         da = DataArranger(self.get_last, attr)
@@ -80,10 +81,13 @@ class DataManager:
 class DataProcessor:
     def __init__(self):
         self.structure = None
+        self.last_data = {}
 
     def set_structure(self, structure):
         self.structure = structure
-
+        self.last_data = {}
+        for s in self.structure.values():
+            self.last_data[s] = 0
     def interpreter_old(self, data):
         if not self.structure:
             return {}
@@ -94,12 +98,13 @@ class DataProcessor:
         return dict(zip(structure, new_data))
 
     def interpreter(self, data):
-        ans = {}
+        ans = self.last_data.copy()
         while data != '':
             big_c = str(data[0]).upper()
             res, data = (data[1:]).split(big_c)
             if big_c in self.structure:
                 ans[self.structure[big_c]] = res
+        self.last_data = ans.copy()
         return ans
 
 class MemoryManager:
@@ -177,4 +182,13 @@ class ConfigData:
 dp = DataProcessor()
 dp.set_structure({'T':'temperature', 'P':'pressure'})
 print(dp.interpreter('t12Tp17P'))
+dm = DataManager()
+dm.data_processor.set_structure({'T':'temperature', 'P':'pressure',
+'X':'X', 'Y':'Y', '@':'time'})
+dm.append('t12T')
+dm.append('t17Tp189P')
+dm.append('p92P')
+print(dm.get_last())
+da = dm.new_data_arranger('time')
+print(da(1))
 '''

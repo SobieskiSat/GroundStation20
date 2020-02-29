@@ -40,8 +40,29 @@ class LiveFlightGui(QRunnable):
 
         while True:
             self.parent.main_window.plot1.update()
+            self.update_serial_status()
             time.sleep(0.2)
 
+    def update_serial_status(self):
+        coloor = ''
+        if not hasattr(self.parent.log, 'ser'):
+            text = 'Loading...'
+            color = 'DarkOrange'
+        else:
+            status = self.parent.log.ser.connection_status()
+            if status == 0:
+                text = 'Waiting for connection...'
+                color = 'DarkGreen'
+            elif status == 1:
+                text = 'Device ready at port '
+                text += str(self.parent.log.ser.port)
+                color = 'DarkOrange'
+            else:
+                text = 'Failed to connect'
+                color = 'Red'
+        self.parent.main_window.port_status_label.setText(text)
+        color = 'color : ' + color
+        self.parent.main_window.port_status_label.setStyleSheet(color)
 class LiveFlightLogic(QRunnable):
     def __init__(self, parent):
         super().__init__()
@@ -138,14 +159,13 @@ class LiveFlightLogic(QRunnable):
 
     def newDataCallback(self, data):
         new_data = self.parent.mm.dm.append(data)
-        '''
+
         try:
             self.parent.main_window.rocket_map.map_view.addPointToPath(
             new_data['x'], new_data['y'], '#123456'
             )
         except Exception as e:
             pass
-        '''
         print(data)
 
     def reset_serial(self):

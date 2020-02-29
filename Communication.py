@@ -1,4 +1,4 @@
-from serial import Serial
+from serial import Serial, portNotOpenError
 import serial.tools.list_ports as lp
 from PyQt5.QtCore import QRunnable, pyqtSlot
 
@@ -16,19 +16,22 @@ class SerialCommunicator(QRunnable):
             print('[Serial] What we have here is the failure to communicate ;)', e)
 
     def reset_serial(self):
+        print('reset')
         try:
             self.serial = Serial(self.port, self.baudrate, timeout=self.timeout)
         except Exception as e:
             pass
-            
+
     def readline(self):
         try:
             data=self.serial.readline()
             #return data
             return str(data)[2:-4]
         except Exception as e:
-            #print('[Serial]', e)
+             #print('[Serial]', e)
             pass
+        except portNotOpenError as e:
+            print('xff')
 
     def set_timeout(self, timeout):
         self.serial.timeout = timeout
@@ -43,6 +46,13 @@ class SerialCommunicator(QRunnable):
     def add_to_outbuffer(self, *args):
         for a in args:
             self.buffer.add(str(a))
+
+    def connection_status(self):
+        if not hasattr(self, 'serial'):
+            return 0
+        if self.serial.isOpen():
+            return 1
+        return -1
 
 
     @pyqtSlot()

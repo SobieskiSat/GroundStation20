@@ -1,2 +1,2 @@
 {'structure': ['time','rssi','x','y', 'h', 'temperature', 'pressure', 'pm25', 'pm10'],
-'new_structure':{'T':'temperature', 'P':'pressure', 'X':'X', 'Y':'Y'}}
+'new_structure':{'T':'temperature', 'P':'pressure', 'X':'X', 'Y':'Y', '@':'time'}}

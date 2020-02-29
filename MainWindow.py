@@ -48,6 +48,6 @@ class MainWindow(QMainWindow):
 
     def initToolbar(self):
         menubar = self.menuBar()
-        fileMenu = menubar.addMenu('&File')
+        fileMenu = menubar.addMenu('&Communication')
         self.find_arduino_menu = QAction('&Find Kit')
         fileMenu.addAction(self.find_arduino_menu)
