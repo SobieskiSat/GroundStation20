@@ -19,6 +19,7 @@ class LiveFlight():
         self.threadpool = QThreadPool()
         self.log = LiveFlightLogic(self)
         self.gui = LiveFlightGui(self)
+        self.af = AdditionalThread(self)
         # main window
         self.main_window = MainWindow()
         self.main_window.show()
@@ -27,24 +28,40 @@ class LiveFlight():
         self.threadpool.start(self.gui)
         self.app.exec_()
 
+
+class AdditionalThread(QThread):
+    def __init__(self, parent):
+        super().__init__()
+        self.parent = parent
+
+    def restart_serial(self):
+        try:
+            self.parent.log.ser.port = DeviceSearcher()
+            self.parent.log.ser.reset_serial()
+        except Exception as e:
+            print(e)
+
+    def get_possible_readings(self):
+        return self.parent.mm.conf['new_structure'].values()
+
 class LiveFlightGui(QRunnable):
     def __init__(self, parent):
         super().__init__()
         self.parent = parent
 
-
     @pyqtSlot()
     def run(self):
-        self.da = self.parent.mm.dm.new_data_arranger('h', 'temperature')
+        self.da = self.parent.mm.dm.new_data_arranger('pressure', 'temperature')
         self.parent.main_window.plot1.start_data_ploter(self.da)
-
+        self.parent.main_window.find_arduino_menu.triggered.connect(
+        self.parent.af.restart_serial)
         while True:
             self.parent.main_window.plot1.update()
             self.update_serial_status()
             time.sleep(0.2)
 
     def update_serial_status(self):
-        coloor = ''
+        color = ''
         if not hasattr(self.parent.log, 'ser'):
             text = 'Loading...'
             color = 'DarkOrange'
@@ -63,6 +80,8 @@ class LiveFlightGui(QRunnable):
         self.parent.main_window.port_status_label.setText(text)
         color = 'color : ' + color
         self.parent.main_window.port_status_label.setStyleSheet(color)
+
+
 class LiveFlightLogic(QRunnable):
     def __init__(self, parent):
         super().__init__()
@@ -123,8 +142,6 @@ class LiveFlightLogic(QRunnable):
         while not hasattr(self.ser, 'serial'):
             pass
         self.parent.threadpool.start(self.ser)
-        self.parent.main_window.find_arduino_menu.triggered.connect(
-        self.reset_serial)
         self.parent.main_window.keyPressEvent = self.keyPressEvent
         self.parent.main_window.keyReleaseEvent = self.keyReleaseEvent
         step = 1
@@ -168,9 +185,6 @@ class LiveFlightLogic(QRunnable):
             pass
         print(data)
 
-    def reset_serial(self):
-        self.ser.port = DeviceSearcher().find_device_port()
-        self.ser.reset_serial()
 
 lf = LiveFlight()
 lf.run()

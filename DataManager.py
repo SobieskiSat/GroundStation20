@@ -99,6 +99,7 @@ class DataProcessor:
 
     def interpreter(self, data):
         ans = self.last_data.copy()
+        data = data[:-1]
         while data != '':
             big_c = str(data[0]).upper()
             res, data = (data[1:]).split(big_c)
