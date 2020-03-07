@@ -106,6 +106,18 @@ class HSI(QWidget):
     def __init__(self):
         self.face = Q
 
+class PortSetWindow(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.main_grid = QGridLayout()
+        self.setLayout(self.main_grid)
+        self.label = QLabel('Choose COM port:')
+        self.main_grid.addWidget(self.label, 1, 1)
+        self.setGeometry(0, 0, 200, 200)
+
+    def get_port(self, ports):
+        self.show()
+
 '''
 app = QApplication(sys.argv)
 pl = Plot()

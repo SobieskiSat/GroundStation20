@@ -1,6 +1,7 @@
 from serial import Serial, portNotOpenError
 import serial.tools.list_ports as lp
 from PyQt5.QtCore import QRunnable, pyqtSlot
+import os
 
 class SerialCommunicator(QRunnable):
     def __init__(self, port, baudrate = 115200, timeout = 0.03, **kwargs):
@@ -16,11 +17,16 @@ class SerialCommunicator(QRunnable):
             print('[Serial] What we have here is the failure to communicate ;)', e)
 
     def reset_serial(self):
-        print('reset')
+        try:
+            self.serial.close()
+        except Exception as e:
+            pass
+        if hasattr(self, 'serial'):
+            delattr(self, 'serial')
         try:
             self.serial = Serial(self.port, self.baudrate, timeout=self.timeout)
         except Exception as e:
-            pass
+            print('[Serial]',e)
 
     def readline(self):
         try:
@@ -37,6 +43,7 @@ class SerialCommunicator(QRunnable):
         self.serial.timeout = timeout
 
     def writeline(self, data):
+        print('sending', data)
         data = bytes(data, 'utf-8')
         self.serial.write(data)
 
@@ -51,7 +58,9 @@ class SerialCommunicator(QRunnable):
         if not hasattr(self, 'serial'):
             return 0
         if self.serial.isOpen():
-            return 1
+            if os.path.exists(self.port):
+                return 1
+            return -2
         return -1
 
 
@@ -83,8 +92,6 @@ class DeviceSearcher:
                 return p.device
         return None
 
-    def tell_name(self):
-        port = 'COM7'
-        ser = Serial(port)
-        print(ser.portstr)
-        print(ser.name)
+    def list_ports(self):
+        ports = lp.comports(include_links=False)
+        return ports
