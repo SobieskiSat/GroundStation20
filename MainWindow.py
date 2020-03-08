@@ -1,9 +1,9 @@
 from PyQt5.QtWidgets import (QMainWindow, QApplication, QSplitter, QGridLayout,
-QWidget, QLabel, QAction)
+QWidget, QLabel, QAction, QLineEdit, QPushButton)
 from PyQt5.QtCore import Qt
 import sys
 from RocketMaps import RocketMap
-from Widgets import Plot
+from Widgets import Plot, PortSetWindow
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -37,17 +37,23 @@ class MainWindow(QMainWindow):
         self.left_grid.addWidget(self.plot1, 2, 1)
 
         #right_widget
-        self.right_splitter = QSplitter(Qt.Vertical)
         self.rocket_map = RocketMap()
-        self.right_splitter.addWidget(self.rocket_map)
+        self.right_grid.addWidget(self.rocket_map, 1, 1)
+        self.text_grid = QGridLayout()
+        self.right_grid.addLayout(self.text_grid, 2, 1)
         self.temp2 = QLabel('Label2')
-        self.right_splitter.addWidget(self.temp2)
-        self.right_grid.addWidget(self.right_splitter, 1, 1)
+        self.text_grid.addWidget(self.temp2, 1, 1)
         self.port_status_label = QLabel('PortNotWorking')
-        self.right_grid.addWidget(self.port_status_label, 2, 1)
+        self.text_grid.addWidget(self.port_status_label, 2, 1)
+        self.command_box = QLineEdit()
+        self.text_grid.addWidget(self.command_box, 3, 1)
+        self.send_command_button = QPushButton('SEND')
+        self.text_grid.addWidget(self.send_command_button, 3, 2)
 
     def initToolbar(self):
         menubar = self.menuBar()
         fileMenu = menubar.addMenu('&Communication')
         self.find_arduino_menu = QAction('&Find Kit')
+        self.set_port_menu = QAction('&Set Port')
         fileMenu.addAction(self.find_arduino_menu)
+        fileMenu.addAction(self.set_port_menu)

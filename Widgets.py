@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import (QWidget,QGridLayout, QApplication, QGraphicsScene,
-QGraphicsView, QPushButton, QLabel, QComboBox)
+QGraphicsView, QPushButton, QLabel, QComboBox, QDialog)
 from PyQt5.QtSvg import (QGraphicsSvgItem)
-
+from PyQt5.QtCore import pyqtSignal
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
@@ -106,6 +106,33 @@ class HSI(QWidget):
     def __init__(self):
         self.face = Q
 
+class AdditionalWindow(QDialog):
+    def __init__(self, *args):
+        super().__init__(*args)
+        self.main_grid = QGridLayout()
+        self.setLayout(self.main_grid)
+
+    def end(self, *args):
+        return ends
+
+class PortSetWindow(AdditionalWindow):
+    value_changed_signal = pyqtSignal()
+    def __init__(self, *args):
+        super().__init__(*args)
+        self.label = QLabel('Choose COM port:')
+        self.main_grid.addWidget(self.label, 1, 1)
+        self.setGeometry(300, 300, 450, 350)
+        self.ans = None
+
+    def set_port(self, ports):
+        for i, p in enumerate(ports):
+                button = QPushButton(str(p))
+                button.clicked.connect(lambda: self.click_event(p))
+                self.main_grid.addWidget(button, i+2, 1)
+
+    def click_event(self, p):
+        self.ans = p
+        self.value_changed_signal.emit()
 '''
 app = QApplication(sys.argv)
 pl = Plot()

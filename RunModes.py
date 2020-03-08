@@ -1,11 +1,12 @@
 from DataManager import MemoryManager
-from PyQt5.QtWidgets import QApplication
+from PyQt5.QtWidgets import QApplication, QDialog
 from PyQt5.Qt import Qt
-from PyQt5.QtCore import QThread, QRunnable, QThreadPool, pyqtSlot
+from PyQt5.QtCore import QThread, QRunnable, QThreadPool, pyqtSlot, pyqtSignal
 import sys
 import time
 from MainWindow import MainWindow
 from Communication import SerialCommunicator, DeviceSearcher
+from Widgets import PortSetWindow
 
 class LiveFlight():
     def __init__(self):
@@ -20,6 +21,8 @@ class LiveFlight():
         self.log = LiveFlightLogic(self)
         self.gui = LiveFlightGui(self)
         self.af = AdditionalThread(self)
+        self.af.port_dialog_signal.connect(self.open_port_dialog)
+        self.af.start()
         # main window
         self.main_window = MainWindow()
         self.main_window.show()
@@ -28,23 +31,73 @@ class LiveFlight():
         self.threadpool.start(self.gui)
         self.app.exec_()
 
+    def open_port_dialog(self, args):
+        def dialog_callback(self, args):
+            ans = self.dialog.ans
+            self.dialog.close()
+            self.mm.dyn['port'] = ans
+            args['callback']()
+        self.dialog = PortSetWindow(self.main_window)
+        self.dialog.set_port(args['ports'])
+        ans = None
+        self.dialog.value_changed_signal.connect(
+        lambda: dialog_callback(self, args))
+        self.dialog.exec_()
 
 class AdditionalThread(QThread):
+    port_dialog_signal = pyqtSignal(dict)
     def __init__(self, parent):
         super().__init__()
         self.parent = parent
+        self.queue = []
+        self.condition = True
 
-    def restart_serial(self):
+    def run(self):
+        while self.condition:
+            if len(self.queue)>0:
+                f = self.queue.pop(0)
+                f(self, True)
+
+    def inner_runner(function):
+        def wrapper(self, inst = False, **kwargs):
+            if inst:
+                return function(**kwargs)
+            self.queue.append(function)
+
+        return wrapper
+
+    @inner_runner
+    def restart_serial(self, *args):
         try:
-            self.parent.log.ser.port = DeviceSearcher()
+            self.parent.log.ser.port = DeviceSearcher().find_device_port()
             self.parent.log.ser.reset_serial()
         except Exception as e:
             print(e)
 
-    def get_possible_readings(self):
+    @inner_runner
+    def get_possible_readings(self, *args):
         return self.parent.mm.conf['new_structure'].values()
 
+    @inner_runner
+    def set_port_menu(self, *args):
+        ports = DeviceSearcher().list_ports()
+        self.port_dialog_signal.emit({'ports':ports, 'callback': self.set_port})
+
+    @inner_runner
+    def set_port(self, *args, **kwargs):
+        try:
+            self.parent.log.ser.port = self.parent.mm.dyn['port']
+        except Exception as e:
+            pass
+        self.parent.log.ser.reset_serial()
+
+    @inner_runner
+    def send_command_line(self, *args):
+        text = str(self.parent.main_window.command_box.text())
+        self.parent.log.ser.writeline(text)
+
 class LiveFlightGui(QRunnable):
+
     def __init__(self, parent):
         super().__init__()
         self.parent = parent
@@ -55,6 +108,10 @@ class LiveFlightGui(QRunnable):
         self.parent.main_window.plot1.start_data_ploter(self.da)
         self.parent.main_window.find_arduino_menu.triggered.connect(
         self.parent.af.restart_serial)
+        self.parent.main_window.set_port_menu.triggered.connect(
+        self.parent.af.set_port_menu)
+        self.parent.main_window.send_command_button.clicked.connect(
+        self.parent.af.send_command_line)
         while True:
             self.parent.main_window.plot1.update()
             self.update_serial_status()
@@ -63,17 +120,21 @@ class LiveFlightGui(QRunnable):
     def update_serial_status(self):
         color = ''
         if not hasattr(self.parent.log, 'ser'):
+
             text = 'Loading...'
             color = 'DarkOrange'
         else:
             status = self.parent.log.ser.connection_status()
             if status == 0:
                 text = 'Waiting for connection...'
-                color = 'DarkGreen'
+                color = 'DarkOrange'
             elif status == 1:
                 text = 'Device ready at port '
                 text += str(self.parent.log.ser.port)
-                color = 'DarkOrange'
+                color = 'DarkGreen'
+            elif status == -2:
+                text = 'Disconnected!'
+                color = 'Red'
             else:
                 text = 'Failed to connect'
                 color = 'Red'
@@ -135,9 +196,7 @@ class LiveFlightLogic(QRunnable):
 
     @pyqtSlot()
     def run(self):
-        port = DeviceSearcher().find_device_port()
-        self.ser = SerialCommunicator(port)
-        time.sleep(1)
+        self.ser = SerialCommunicator()
         self.ser.setOnReadCallback(self.newDataCallback)
         while not hasattr(self.ser, 'serial'):
             pass
@@ -184,7 +243,6 @@ class LiveFlightLogic(QRunnable):
         except Exception as e:
             pass
         print(data)
-
 
 lf = LiveFlight()
 lf.run()
