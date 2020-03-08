@@ -3,7 +3,7 @@ QWidget, QLabel, QAction, QLineEdit, QPushButton)
 from PyQt5.QtCore import Qt
 import sys
 from RocketMaps import RocketMap
-from Widgets import Plot
+from Widgets import Plot, PortSetWindow
 
 class MainWindow(QMainWindow):
     def __init__(self):
