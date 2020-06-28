@@ -1,0 +1,17 @@
+<link rel="stylesheet" type="text/css" href="speedometer.css">
+<div class="container">
+  <div class="gauge-a"></div>
+  <div class="gauge-b"></div>
+  <div id="gauge-c"></div>
+  <div class="gauge-data">
+    <h1 id="percent">0%</h1>
+  </div>
+</div>
+
+<script type="text/javascript">
+  let rotation = 0;
+  function set_speed(speed){
+    let req = "rotate("+speed+" turn)";
+    document.getElementById("gauge-c").style.transform = req;
+  }
+</script>

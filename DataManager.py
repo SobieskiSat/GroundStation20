@@ -33,8 +33,8 @@ class DataManager:
         if len(self.data) >= self.max:
             self.data.pop(0)
         try:
-            new_data = '@'+str(timestamp)+'@'+str(value)
-            new_data = self.data_processor.interpreter(new_data)
+            new_data = str(value)
+            new_data = self.data_processor.interpreter(new_data, timestamp)
         except Exception as e:
             print('[DM]', e)
 
@@ -61,7 +61,7 @@ class DataManager:
         class DataArranger:
             def __init__(self, df, names):
                 self.data_func = df
-                self.names = names
+                self.names = list(names)
 
             def get_data(self, num = 100):
                 data = self.data_func(num)
@@ -73,8 +73,17 @@ class DataManager:
                             new.append(d['processed'][n])
                     ans.append(new)
                 return ans
+
+            def change_x_axis(self, name):
+                self.names[1] = name
+
+            def change_y_axis(self, name):
+                self.names[0] = name
+
+            def __call__(self, num=100):
+                return self.get_data(num)
         da = DataArranger(self.get_last, attr)
-        return da.get_data
+        return da
 
 
 
@@ -88,6 +97,7 @@ class DataProcessor:
         self.last_data = {}
         for s in self.structure.values():
             self.last_data[s] = 0
+
     def interpreter_old(self, data):
         if not self.structure:
             return {}
@@ -97,7 +107,9 @@ class DataProcessor:
         structure = self.structure
         return dict(zip(structure, new_data))
 
-    def interpreter(self, data):
+    def interpreter(self, data, timestamp):
+        if not hasattr(self, 'start_time'):
+            self.start_time = timestamp
         ans = self.last_data.copy()
         data = data[:-1]
         while data != '':
@@ -105,6 +117,7 @@ class DataProcessor:
             res, data = (data[1:]).split(big_c)
             if big_c in self.structure:
                 ans[self.structure[big_c]] = float(res)
+        ans['flight_time'] = timestamp - self.start_time
         self.last_data = ans.copy()
         return ans
 

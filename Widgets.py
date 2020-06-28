@@ -1,10 +1,11 @@
 from PyQt5.QtWidgets import (QWidget,QGridLayout, QApplication, QGraphicsScene,
 QGraphicsView, QPushButton, QLabel, QComboBox, QDialog)
 from PyQt5.QtSvg import (QGraphicsSvgItem)
-from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtCore import pyqtSignal, QUrl
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
+from PyQt5.QtQuickWidgets import QQuickWidget
 import os
 import time
 
@@ -24,30 +25,32 @@ class Plot(QWidget):
         self.zoom_step = 50
         self.should_update = True
         self.canvas = FigureCanvas(self.fig)
-        self.main_grid.addWidget(self.canvas, 1, 2)
+        self.main_grid.addWidget(self.canvas, 1, 1)
         self.ax  = self.fig.add_subplot(111)
-        #self.example_plot()
 
         self.left_grid = QGridLayout()
         self.zoomin_button = QPushButton('+')
-        self.left_grid.addWidget(self.zoomin_button, 2, 1)
+        self.left_grid.addWidget(self.zoomin_button, 1, 1)
         self.zoomin_button.clicked.connect(self.zoomin)
         self.zoomin_button.setMaximumSize(30, 30)
         self.size_label = QLabel()
-        self.left_grid.addWidget(self.size_label, 3, 1)
+        self.left_grid.addWidget(self.size_label, 1, 2)
         self.zoomout_button = QPushButton('-')
-        self.left_grid.addWidget(self.zoomout_button, 4, 1)
+        self.left_grid.addWidget(self.zoomout_button, 1, 3)
         self.zoomout_button.clicked.connect(self.zoomout)
         self.zoomout_button.setMaximumSize(30, 30)
         self.pause_button = QPushButton('||')
-        self.left_grid.addWidget(self.pause_button, 5, 1)
+        self.left_grid.addWidget(self.pause_button, 1, 4)
         self.pause_button.clicked.connect(self.should_update_change)
         self.pause_button.setMaximumSize(30, 30)
         self.save_button = QPushButton('S')
-        self.left_grid.addWidget(self.save_button, 6, 1)
+        self.left_grid.addWidget(self.save_button, 1, 5)
         self.save_button.clicked.connect(self.save_png)
         self.save_button.setMaximumSize(30, 30)
-        self.main_grid.addLayout(self.left_grid, 1, 1)
+        self.options_combo_box = QComboBox()
+        self.left_grid.addWidget(self.options_combo_box, 1, 6)
+        self.main_grid.addLayout(self.left_grid, 2, 1)
+
 
     def plot(self, data1, data2='r-'):
         self.ax.clear()
@@ -87,8 +90,12 @@ class Plot(QWidget):
         data = self.data_src(self.size)
         self.plot(data[0], data[1])
 
-    def get_possible_readings(self):
-        pass
+    def change_da(self):
+        self.data_src.change_x_axis(self.options_combo_box.currentText())
+
+    def set_possible_readings(self, data):
+        self.options_combo_box.currentTextChanged.connect(self.change_da)
+        self.options_combo_box.addItems(data)
 
     def set_size(self, size):
         self.size = size
@@ -105,6 +112,19 @@ class Plot(QWidget):
 class HSI(QWidget):
     def __init__(self):
         self.face = Q
+
+class Speedometer(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.main_grid = QGridLayout()
+        self.setLayout(self.main_grid)
+        self.url = QUrl.fromLocalFile('media/speedometer.qml')
+        self.quick = QQuickWidget()
+        self.quick.initialSize()
+        self.quick .setSource(self.url)
+        self.main_grid.addWidget(self.quick, 1, 1)
+
+
 
 class AdditionalWindow(QDialog):
     def __init__(self, *args):
@@ -135,7 +155,7 @@ class PortSetWindow(AdditionalWindow):
         self.value_changed_signal.emit()
 '''
 app = QApplication(sys.argv)
-pl = Plot()
+pl = Speedometer()
 pl.show()
 app.exec_()
 '''

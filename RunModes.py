@@ -32,11 +32,21 @@ class LiveFlight():
         self.app.exec_()
 
     def open_port_dialog(self, args):
+
+        # Used when any port choice button is clicked
+        # Sets answer in dynamic memory as 'port'
+        # Then callbacks function from args
+
         def dialog_callback(self, args):
             ans = self.dialog.ans
             self.dialog.close()
             self.mm.dyn['port'] = ans
             args['callback']()
+
+        # Opens new window with port choice (it takes some time to load this)
+        # ToDo: make it load ports dynamicly
+        # If any choice made it calls dialog_callback
+
         self.dialog = PortSetWindow(self.main_window)
         self.dialog.set_port(args['ports'])
         ans = None
@@ -44,13 +54,27 @@ class LiveFlight():
         lambda: dialog_callback(self, args))
         self.dialog.exec_()
 
+
+# AdditionalThread is used for time consuming logic
+
 class AdditionalThread(QThread):
+
     port_dialog_signal = pyqtSignal(dict)
+    # AdditionalThread requires parrent (Main_Logic_Thread such as LiveFlight)
+    # Every function run in this thread should be written is this class
+    # and requires @inner_runner decorator to be executed properly by main loop
+    # ToDo: enable other functions to be executed in this thread
+
     def __init__(self, parent):
         super().__init__()
         self.parent = parent
         self.queue = []
         self.condition = True
+
+    # Used to start main main loop
+    # It keeps running while condition is set to True
+    # It keeps checking if any function is waiting in a queue
+    # When it is time to execute function is sets inst to True
 
     def run(self):
         while self.condition:
@@ -58,13 +82,26 @@ class AdditionalThread(QThread):
                 f = self.queue.pop(0)
                 f(self, True)
 
+    # Decorator used to enable functions to be queued and executed properly
+
     def inner_runner(function):
+        # By default inst should be set to false
+        # Setting it to True makes it skip the queue
+        # ToDo: Change the way function is added to the queue
+
         def wrapper(self, inst = False, **kwargs):
             if inst:
                 return function(**kwargs)
             self.queue.append(function)
 
         return wrapper
+    # _____________
+    # Functions that can be excecuted it this thread:
+    # _____________
+
+    # Restarts the device
+    # [?] Why it Searches only for CanSat Kit
+    # ToDo: Enable Reset for last used type of port
 
     @inner_runner
     def restart_serial(self, *args):
@@ -72,25 +109,37 @@ class AdditionalThread(QThread):
             self.parent.log.ser.port = DeviceSearcher().find_device_port()
             self.parent.log.ser.reset_serial()
         except Exception as e:
-            print(e)
+            print('[AddThr1] I wish I knew how to quit you! \n', e)
+
+    # Gets readings structure from configuration files
+    # It is not time consumin any more
+    # Can be moved to main thread if needed
 
     @inner_runner
     def get_possible_readings(self, *args):
         return self.parent.mm.conf['new_structure'].values()
+
+    # Opens Dialog that asks to choose a port to connect
 
     @inner_runner
     def set_port_menu(self, *args):
         ports = DeviceSearcher().list_ports()
         self.port_dialog_signal.emit({'ports':ports, 'callback': self.set_port})
 
+    # Sets new port from dynamic memory 'port'
+    # It can be spaned with reset_serial
+
     @inner_runner
     def set_port(self, *args, **kwargs):
         try:
             self.parent.log.ser.port = self.parent.mm.dyn['port']
         except Exception as e:
-            pass
+            print('[AddThr2] Frankly, my dear, I don\'t give a damn. \n', e)
         self.parent.log.ser.reset_serial()
 
+    # Takes command from command_box and sends it to serial
+    # ToDo: Add validation
+    
     @inner_runner
     def send_command_line(self, *args):
         text = str(self.parent.main_window.command_box.text())
@@ -104,16 +153,22 @@ class LiveFlightGui(QRunnable):
 
     @pyqtSlot()
     def run(self):
-        self.da = self.parent.mm.dm.new_data_arranger('pressure', 'temperature')
-        self.parent.main_window.plot1.start_data_ploter(self.da)
+        da1 = self.parent.mm.dm.new_data_arranger('flight_time', 'temperature')
+        self.parent.main_window.plot1.start_data_ploter(da1)
+        da2 = self.parent.mm.dm.new_data_arranger('flight_time', 'temperature')
+        self.parent.main_window.plot2.start_data_ploter(da2)
         self.parent.main_window.find_arduino_menu.triggered.connect(
         self.parent.af.restart_serial)
         self.parent.main_window.set_port_menu.triggered.connect(
         self.parent.af.set_port_menu)
         self.parent.main_window.send_command_button.clicked.connect(
         self.parent.af.send_command_line)
+        possible_readings = self.parent.mm.conf['new_structure'].values()
+        self.parent.main_window.plot2.set_possible_readings(possible_readings)
+        self.parent.main_window.plot1.set_possible_readings(possible_readings)
         while True:
             self.parent.main_window.plot1.update()
+            self.parent.main_window.plot2.update()
             self.update_serial_status()
             time.sleep(0.2)
 

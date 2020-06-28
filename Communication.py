@@ -15,14 +15,14 @@ class SerialCommunicator(QRunnable):
         try:
             self.serial.close()
         except Exception as e:
-            pass
+            pass # Its fine, we have to make sure serial is closed
         if hasattr(self, 'serial'):
             delattr(self, 'serial')
         try:
             self.serial = Serial(self.port, self.baudrate, timeout=self.timeout)
             print(self.port)
         except Exception as e:
-            print('[Serial2] What we have here is the failure to communicate ;',e)
+            print('[Serial2] What we have here is the failure to communicate ;\n',e)
 
     def readline(self):
         try:

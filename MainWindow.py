@@ -35,6 +35,8 @@ class MainWindow(QMainWindow):
         self.left_grid.addWidget(self.temp, 1, 1)
         self.plot1 = Plot()
         self.left_grid.addWidget(self.plot1, 2, 1)
+        self.plot2 = Plot()
+        self.left_grid.addWidget(self.plot2, 2, 2)
 
         #right_widget
         self.rocket_map = RocketMap()
@@ -57,3 +59,6 @@ class MainWindow(QMainWindow):
         self.set_port_menu = QAction('&Set Port')
         fileMenu.addAction(self.find_arduino_menu)
         fileMenu.addAction(self.set_port_menu)
+        flightMenu = menubar.addMenu('&Flight')
+        self.start_flight_menu = QAction('&Start new flight')
+        flightMenu.addAction(self.start_flight_menu)
