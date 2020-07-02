@@ -70,7 +70,7 @@
 	function onMapClick(e) {
 		popup
 			.setLatLng(e.latlng)
-			.setContent("You clicked the map at " + e.latlng.toString())
+			.setContent(e.latlng.toString())
 			.openOn(mymap);
 	}
 
@@ -80,6 +80,10 @@
   }
 	mymap.on('click', onMapClick);
   window.addEventListener('resize', onWindowResize);
+
+	function setFocus(x, y, z = 13){
+		mymap.setView([x, y], z);
+	}
 
 </script>
 </body>

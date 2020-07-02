@@ -6,7 +6,7 @@ import sys
 import time
 from MainWindow import MainWindow
 from Communication import SerialCommunicator, DeviceSearcher
-from Widgets import PortSetWindow
+from Widgets import PortSetWindow, AntenaLocationSetWindow
 
 class LiveFlight():
     def __init__(self):
@@ -22,6 +22,8 @@ class LiveFlight():
         self.gui = LiveFlightGui(self)
         self.af = AdditionalThread(self)
         self.af.port_dialog_signal.connect(self.open_port_dialog)
+        self.af.set_antena_location_signal.connect(
+        self.open_set_antena_location_dialog)
         self.af.start()
         # main window
         self.main_window = MainWindow()
@@ -49,17 +51,31 @@ class LiveFlight():
 
         self.dialog = PortSetWindow(self.main_window)
         self.dialog.set_port(args['ports'])
-        ans = None
+        # ans = None
         self.dialog.value_changed_signal.connect(
         lambda: dialog_callback(self, args))
         self.dialog.exec_()
 
+    def open_set_antena_location_dialog(self, args):
+        def dialog_callback(self, args):
+            ans = self.dialog.ans
+            self.dialog.close()
+            self.mm.dyn['antena_location'] = ans
+            args['callback']()
+
+        self.dialog = AntenaLocationSetWindow(self.main_window)
+        if 'antena_location' in self.mm.dyn:
+            self.dialog.set_current_location(self.mm.dyn['antena_location'])
+        self.dialog.value_changed_signal.connect(
+        lambda: dialog_callback(self, args))
+        self.dialog.exec_()
 
 # AdditionalThread is used for time consuming logic
 
 class AdditionalThread(QThread):
 
     port_dialog_signal = pyqtSignal(dict)
+    set_antena_location_signal = pyqtSignal(dict)
     # AdditionalThread requires parrent (Main_Logic_Thread such as LiveFlight)
     # Every function run in this thread should be written is this class
     # and requires @inner_runner decorator to be executed properly by main loop
@@ -138,12 +154,41 @@ class AdditionalThread(QThread):
         self.parent.log.ser.reset_serial()
 
     # Takes command from command_box and sends it to serial
-    # ToDo: Add validation
-    
+    # ToDo: Add validation and inner commands
     @inner_runner
     def send_command_line(self, *args):
         text = str(self.parent.main_window.command_box.text())
         self.parent.log.ser.writeline(text)
+
+    # Changes map focus to the last position of satelite
+
+    @inner_runner
+    def find_point(self, *args):
+        try:
+            last = self.parent.mm.dm.get_last(1)[0]['processed']
+            if not last:
+                return
+                x, y = last['X'], last['Y']
+            try:
+                self.parent.main_window.rocket_map.map_view.findPoint(x, y, 13)
+            except Exception as e:
+                print('[AddThr3]', e)
+        except Exception as e:
+            print('[AddThr4] Brak zapisanej lokalizacji satelity', e)
+
+    @inner_runner
+    def set_antena_location_clicked(self, *args):
+        self.set_antena_location_signal.emit(
+        {'callback':self.set_antena_loacation})
+
+    # Action to do after the new location of antena is set
+    @inner_runner
+    def set_antena_loacation(self, *args, **kwargs):
+        pass
+
+
+# Class responible for presenting data in Graphical format
+# LiveFlightGui requires parrent (Main_Logic_Thread such as LiveFlight)
 
 class LiveFlightGui(QRunnable):
 
@@ -151,26 +196,47 @@ class LiveFlightGui(QRunnable):
         super().__init__()
         self.parent = parent
 
+# Main GUI loop stated from main thread
+
     @pyqtSlot()
     def run(self):
+        # Initializing data arrengers for both plots
+        # Then adding all possible readings to plots
         da1 = self.parent.mm.dm.new_data_arranger('flight_time', 'temperature')
         self.parent.main_window.plot1.start_data_ploter(da1)
         da2 = self.parent.mm.dm.new_data_arranger('flight_time', 'temperature')
         self.parent.main_window.plot2.start_data_ploter(da2)
+        possible_readings = self.parent.mm.conf['new_structure'].values()
+        self.parent.main_window.plot2.set_possible_readings(possible_readings)
+        self.parent.main_window.plot1.set_possible_readings(possible_readings)
+
+        # Seting upper Menu
         self.parent.main_window.find_arduino_menu.triggered.connect(
         self.parent.af.restart_serial)
         self.parent.main_window.set_port_menu.triggered.connect(
         self.parent.af.set_port_menu)
+
+        #Seting buttons
         self.parent.main_window.send_command_button.clicked.connect(
         self.parent.af.send_command_line)
-        possible_readings = self.parent.mm.conf['new_structure'].values()
-        self.parent.main_window.plot2.set_possible_readings(possible_readings)
-        self.parent.main_window.plot1.set_possible_readings(possible_readings)
+        self.parent.main_window.find_point_button.clicked.connect(
+        self.parent.af.find_point)
+        self.parent.main_window.set_antena_loactio_button.clicked.connect(
+        self.parent.af.set_antena_location_clicked)
+
+        # Only functions inside inner loop are refreshed
+        # ToDo: Check most efficent refresh time (if any sleep needed)
+
         while True:
             self.parent.main_window.plot1.update()
             self.parent.main_window.plot2.update()
             self.update_serial_status()
             time.sleep(0.2)
+
+    # Updates status of device conected by serial port
+    # It takes connection_status from logic thread
+    # Then updates port_status_label in main window
+    # ToDo: Make sure it doesnt refreh to often in logic thread
 
     def update_serial_status(self):
         color = ''
@@ -197,8 +263,15 @@ class LiveFlightGui(QRunnable):
         color = 'color : ' + color
         self.parent.main_window.port_status_label.setStyleSheet(color)
 
+# Class responible for logic operations durnig live flight
+# LiveFlightLogic requires parrent (Main_Logic_Thread such as LiveFlight)
 
 class LiveFlightLogic(QRunnable):
+
+    # This __init__ is a mess
+    # [v] ToDo: Find better way to initialize all this properties (maybe config)
+    # New ToDo: Create methodes that dynamicly delivers requested data
+
     def __init__(self, parent):
         super().__init__()
         self.parent = parent
@@ -292,12 +365,24 @@ class LiveFlightLogic(QRunnable):
         new_data = self.parent.mm.dm.append(data)
 
         try:
+            def RGBbyRSSI(rssi):
+                rssi = abs(int(rssi))
+                max_rssi = 255
+                red, green = rssi, max_rssi - rssi
+                red_h = str(hex(red))[2:]
+                green_h = str(hex(green))[-2:]
+                if len(red_h) == 1:
+                    red_h = '0'+red_h
+                if len(green_h) == 1:
+                    green_h = '0'+green_h
+                color = '#'+red_h+green_h+'00'
+                return color
+
             self.parent.main_window.rocket_map.map_view.addPointToPath(
-            new_data['x'], new_data['y'], '#123456'
+            new_data['X'], new_data['Y'], RGBbyRSSI(new_data['rssi'])
             )
         except Exception as e:
-            pass
-        print(data)
+            print('[newDataCallback]',e)
 
 lf = LiveFlight()
 lf.run()

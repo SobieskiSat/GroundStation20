@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import (QWidget,QGridLayout, QApplication, QGraphicsScene,
-QGraphicsView, QPushButton, QLabel, QComboBox, QDialog)
+QGraphicsView, QPushButton, QLabel, QComboBox, QDialog, QLineEdit)
 from PyQt5.QtSvg import (QGraphicsSvgItem)
 from PyQt5.QtCore import pyqtSignal, QUrl
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
@@ -153,6 +153,95 @@ class PortSetWindow(AdditionalWindow):
     def click_event(self, p):
         self.ans = p
         self.value_changed_signal.emit()
+
+class AntenaLocationSetWindow(AdditionalWindow):
+    value_changed_signal = pyqtSignal()
+    def __init__(self, last = None, *args):
+        super().__init__(*args)
+        self.ans = last
+        if not last:
+            self.ans = {'x':0, 'y':0, 'h':0}
+
+        class LocationInput(QWidget):
+            def __init__(self, name, val, type):
+                super().__init__(*args)
+                self.name = name
+                self.type = type
+                self.main_grid = QGridLayout()
+                self.setLayout(self.main_grid)
+                self.name_label = QLabel(self.name)
+                self.main_grid.addWidget(self.name_label, 1, 1)
+                self.error_label = QLabel('')
+                self.main_grid.addWidget(self.error_label, 1, 3)
+                self.error_label.setStyleSheet('color: Red')
+                self.input_box = QLineEdit()
+                self.main_grid.addWidget(self.input_box, 1, 2)
+                self.input_box.textEdited.connect(self.checkType)
+
+                try:
+                    val = str(val)
+                    self.input_box.setText(val)
+                except Exception as e:
+                    pass
+
+            def checkType(self):
+                txt = self.input_box.text()
+                flag = None
+                try:
+                    txt = float(txt)
+                    if self.type == 'cord_x' or self.type == 'cord_y':
+                        if(txt <= -90 or txt >= 90): flag = 'Out_of_range'
+                    if self.type == 'cord_h':
+                        if (txt <= -200 or txt >= 8000): flag = 'Out_of_range'
+                except Exception as e:
+                    flag = 'Invalid_Form'
+                if flag:
+                    self.error_label.setText(flag)
+                else:
+                    self.error_label.setText('')
+                return flag
+
+
+
+        self.input_x = LocationInput('X', 0.0, 'cord_x')
+        self.input_y = LocationInput('Y', 0.0, 'cord_y')
+        self.input_h = LocationInput('H', 0.0, 'cord_h')
+        self.main_grid.addWidget(self.input_x, 1, 3)
+        self.main_grid.addWidget(self.input_y, 2, 3)
+        self.main_grid.addWidget(self.input_h, 3, 3)
+        self.setGeometry(300, 300, 450, 350)
+
+    def edit_event(self, p):
+        if not self.input_x.checkType() == None:
+            return
+        if not self.input_y.checkType() == None:
+            return
+        if not self.input_z.checkType() == None:
+            return
+
+
+class AntenaLocationLabel(QLabel):
+    def __init__(self):
+        super().__init__()
+        self.x = None
+        self.y = None
+        self.h = 0
+        self.set_text()
+
+    def update_location(self, x, y, h):
+        self.x = x
+        self.y = y
+        self.h = h
+
+    def set_text(self):
+        if not self.x or not self.y:
+            color = 'Red'
+            self.setText("Lokalizacja anteny nie została ustawiona!")
+        else:
+            color = 'DarkGreen'
+            self.setText(f"Lokalizacja anteny: X_{self.x}, Y_{self.y}, H_{self.h}")
+        color = 'color : ' + color
+        self.setStyleSheet(color)
 '''
 app = QApplication(sys.argv)
 pl = Speedometer()
