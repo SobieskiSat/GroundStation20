@@ -96,7 +96,7 @@ class AdditionalThread(QThread):
         while self.condition:
             if len(self.queue)>0:
                 f = self.queue.pop(0)
-                f(self, True)
+                f['func'](self, f['args'], **f['kwargs'])
 
     # Decorator used to enable functions to be queued and executed properly
 
@@ -105,14 +105,14 @@ class AdditionalThread(QThread):
         # Setting it to True makes it skip the queue
         # ToDo: Change the way function is added to the queue
 
-        def wrapper(self, inst = False, **kwargs):
+        def wrapper(self, inst = False, *args, **kwargs):
             if inst:
                 return function(**kwargs)
-            self.queue.append(function)
+            self.queue.append({'func':function, 'args':args, 'kwargs':kwargs})
 
         return wrapper
     # _____________
-    # Functions that can be excecuted it this thread:
+    # Functions that can be excecuted in this thread:
     # _____________
 
     # Restarts the device
@@ -158,7 +158,11 @@ class AdditionalThread(QThread):
     @inner_runner
     def send_command_line(self, *args):
         text = str(self.parent.main_window.command_box.text())
-        self.parent.log.ser.writeline(text)
+        self.parent.main_window.command_box.setText('')
+        try:
+            self.parent.log.ser.writeline(text)
+        except Exception as e:
+            print('[AddThr5] Wysyłanie nie powiodło się. \n', e)
 
     # Changes map focus to the last position of satelite
 
@@ -174,7 +178,9 @@ class AdditionalThread(QThread):
             except Exception as e:
                 print('[AddThr3]', e)
         except Exception as e:
-            print('[AddThr4] Brak zapisanej lokalizacji satelity', e)
+            print('[AddThr4] satelite location not saved!', e)
+
+    # Excecuted when SER ANTENA LOCATION is clicked
 
     @inner_runner
     def set_antena_location_clicked(self, *args):
@@ -184,7 +190,35 @@ class AdditionalThread(QThread):
     # Action to do after the new location of antena is set
     @inner_runner
     def set_antena_loacation(self, *args, **kwargs):
-        pass
+        self.send_by_serial(
+        data = self.parent.mm.dyn['antena_location']['x'], code ='ant_x')
+        self.send_by_serial(
+        data = self.parent.mm.dyn['antena_location']['y'], code = 'ant_y')
+        self.send_by_serial(
+        data = self.parent.mm.dyn['antena_location']['h'], code = 'ant_h')
+        self.parent.main_window.antena_location_label.update_location(
+        self.parent.mm.dyn['antena_location'])
+
+    @inner_runner
+    def send_by_serial(self, *args, **kwargs):
+        code = kwargs['code']
+        data = kwargs['data']
+        try:
+            code = self.parent.mm.conf['send_code'][code]
+        except Exception as e:
+            print(f'[AddThr6] Code not found {code} \n', e)
+            return
+        try:
+            data = str(data)
+            end = code.upper()
+        except Exception as e:
+            print('[AddThr7] Failed to compress data \n', e)
+            return
+        try:
+            msg = f'{code}{data}{end}'
+            self.parent.log.ser.add_to_outbuffer(msg)
+        except Exception as e:
+            print(f'[AddThr8] Failed to send msg: {msg} \n', e)
 
 
 # Class responible for presenting data in Graphical format
@@ -231,7 +265,8 @@ class LiveFlightGui(QRunnable):
             self.parent.main_window.plot1.update()
             self.parent.main_window.plot2.update()
             self.update_serial_status()
-            time.sleep(0.2)
+            self.parent.main_window.data_set_widget.refresh()
+            time.sleep(0.1)
 
     # Updates status of device conected by serial port
     # It takes connection_status from logic thread
@@ -350,7 +385,7 @@ class LiveFlightLogic(QRunnable):
 
             temp_text = 'l:{} r:{} p:{} a:{}'.format(
             self.left_motor, self.right_motor, self.power, self.angle)
-            self.parent.main_window.temp2.setText(temp_text)
+            # self.parent.main_window.temp2.setText(temp_text)
 
             l_out = int(self.left_motor*self.power/100)*2
             r_out = int(self.right_motor*self.power/100)*2
@@ -363,6 +398,7 @@ class LiveFlightLogic(QRunnable):
 
     def newDataCallback(self, data):
         new_data = self.parent.mm.dm.append(data)
+        self.parent.main_window.data_set_widget.update(**new_data)
 
         try:
             def RGBbyRSSI(rssi):

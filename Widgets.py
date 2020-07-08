@@ -202,22 +202,40 @@ class AntenaLocationSetWindow(AdditionalWindow):
                 return flag
 
 
-
         self.input_x = LocationInput('X', 0.0, 'cord_x')
         self.input_y = LocationInput('Y', 0.0, 'cord_y')
         self.input_h = LocationInput('H', 0.0, 'cord_h')
+        self.input_x.input_box.textEdited.connect(self.edit_event)
+        self.input_y.input_box.textEdited.connect(self.edit_event)
+        self.input_h.input_box.textEdited.connect(self.edit_event)
         self.main_grid.addWidget(self.input_x, 1, 3)
         self.main_grid.addWidget(self.input_y, 2, 3)
         self.main_grid.addWidget(self.input_h, 3, 3)
+        self.accept_button = QPushButton('SAVE')
+        self.main_grid.addWidget(self.accept_button, 4, 3)
+        self.accept_button.clicked.connect(self.save_clicked)
+        self.edit_event()
+
         self.setGeometry(300, 300, 450, 350)
 
-    def edit_event(self, p):
-        if not self.input_x.checkType() == None:
-            return
-        if not self.input_y.checkType() == None:
-            return
-        if not self.input_z.checkType() == None:
-            return
+    def edit_event(self):
+        correct_flag = True
+        if self.input_x.checkType() != None:
+            correct_flag = False
+        if self.input_y.checkType() != None:
+            correct_flag = False
+        if self.input_h.checkType() != None:
+            correct_flag = False
+        self.accept_button.setEnabled(correct_flag)
+
+    def save_clicked(self):
+        self.ans = {
+         'x':self.input_x.input_box.text(),
+         'y':self.input_y.input_box.text(),
+         'h':self.input_h.input_box.text()
+        }
+        self.value_changed_signal.emit()
+
 
 
 class AntenaLocationLabel(QLabel):
@@ -228,10 +246,11 @@ class AntenaLocationLabel(QLabel):
         self.h = 0
         self.set_text()
 
-    def update_location(self, x, y, h):
-        self.x = x
-        self.y = y
-        self.h = h
+    def update_location(self, loc):
+        self.x = loc['x']
+        self.y = loc['y']
+        self.h = loc['h']
+        self.set_text()
 
     def set_text(self):
         if not self.x or not self.y:
@@ -242,9 +261,62 @@ class AntenaLocationLabel(QLabel):
             self.setText(f"Lokalizacja anteny: X_{self.x}, Y_{self.y}, H_{self.h}")
         color = 'color : ' + color
         self.setStyleSheet(color)
-'''
-app = QApplication(sys.argv)
-pl = Speedometer()
-pl.show()
-app.exec_()
-'''
+
+class DataPresentationWidget(QWidget):
+    def __init__(self):
+        self.precison = 3
+        super().__init__()
+        self.main_grid = QGridLayout()
+        self.setLayout(self.main_grid)
+        self.name_label = QLabel()
+        self.main_grid.addWidget(self.name_label, 1, 1)
+        self.data_label = QLabel()
+        self.main_grid.addWidget(self.data_label, 2, 1)
+        self.update_time_label = QLabel()
+        self.main_grid.addWidget(self.update_time_label, 3, 1)
+
+
+    def set(self, name):
+        self.name = name
+        self.name_label.setText(name)
+        self.data_label.setText('NO_DATA')
+
+    def update(self, data, last_time):
+        time_since_last_update = round(time.time() - last_time, self.precison)
+        self.data_label.setText(str(data))
+        self.update_time_label.setText(str(time_since_last_update))
+
+class DataSetWidget(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.main_grid = QGridLayout()
+        self.widgets  = {}
+        self.data = {}
+        self.width = 3
+        self.widgets_limit = 12
+        self.setLayout(self.main_grid)
+        self.avalible_widgets = []
+        for w in range(self.widgets_limit):
+            widget = DataPresentationWidget()
+            self.main_grid.addWidget(widget, w//3+1, w%3+1)
+            self.avalible_widgets.append(widget)
+
+    def update(self, **kwargs):
+        for name, data in kwargs.items():
+            try:
+                current_time = time.time()
+                self.data[name] ={
+                'data':data, 'update_time':current_time, 'name':name}
+            except Exception as e:
+                print(e)
+
+    def refresh(self):
+        for _, d in self.data.items():
+            if d['name'] in self.widgets:
+                self.widgets[d['name']].update(d['data'], d['update_time'])
+            elif len(self.avalible_widgets) > 0:
+                new_widget = self.avalible_widgets.pop(0)
+                new_widget.set(d['name'])
+                self.widgets[d['name']] = new_widget
+            else:
+                print('[GUI] Not enough data widgets!')

@@ -3,7 +3,7 @@ QWidget, QLabel, QAction, QLineEdit, QPushButton)
 from PyQt5.QtCore import Qt
 import sys
 from RocketMaps import RocketMap
-from Widgets import Plot, PortSetWindow, AntenaLocationLabel
+from Widgets import Plot, PortSetWindow, AntenaLocationLabel, DataSetWidget
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -31,8 +31,8 @@ class MainWindow(QMainWindow):
         self.main_grid.addWidget(self.main_splitter, 1, 1)
 
         #left_widget
-        self.temp = QLabel('Label1')
-        self.left_grid.addWidget(self.temp, 1, 1)
+        self.data_set_widget = DataSetWidget()
+        self.left_grid.addWidget(self.data_set_widget, 1, 1)
         self.plot1 = Plot()
         self.left_grid.addWidget(self.plot1, 2, 1)
         self.plot2 = Plot()

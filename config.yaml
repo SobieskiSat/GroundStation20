@@ -1,3 +1,5 @@
-{'structure': ['time','rssi','x','y', 'h', 'temperature', 'pressure', 'pm25', 'pm10'],
-'new_structure':{'T':'temperature', 'P':'pressure', 'X':'X', 'Y':'Y',
-'A':'a', 'B':'b', 'C':'c', 'R':'rssi'}}
+{'structure' :
+  ['time','rssi','x','y', 'h', 'temperature', 'pressure', 'pm25', 'pm10'],
+'new_structure' :
+  {'T':'temperature', 'P':'pressure', 'X':'X', 'Y':'Y','A':'a', 'B':'b', 'C':'c', 'R':'rssi'},
+'send_code' : {'ant_x':'j', 'ant_y':'k', 'ant_h':'l'}}
