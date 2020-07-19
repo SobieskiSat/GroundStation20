@@ -6,7 +6,8 @@ import sys
 import time
 from MainWindow import MainWindow
 from Communication import SerialCommunicator, DeviceSearcher
-from Widgets import PortSetWindow, AntenaLocationSetWindow
+from Widgets import (PortSetWindow, AntenaLocationSetWindow,
+FlightTargetSetWindow, FlightDirectionSetWindow, FlightModeSetWindow)
 
 class LiveFlight():
     def __init__(self):
@@ -24,6 +25,9 @@ class LiveFlight():
         self.af.port_dialog_signal.connect(self.open_port_dialog)
         self.af.set_antena_location_signal.connect(
         self.open_set_antena_location_dialog)
+        self.af.set_flight_mode_signal.connect(self.open_set_flight_mode_dialog)
+        self.af.set_flight_target_signal.connect(self.open_set_flight_target_dialog)
+        self.af.set_flight_direction_signal.connect(self.open_set_flight_direction_dialog)
         self.af.start()
         # main window
         self.main_window = MainWindow()
@@ -70,12 +74,52 @@ class LiveFlight():
         lambda: dialog_callback(self, args))
         self.dialog.exec_()
 
+    def open_set_flight_mode_dialog(self, args):
+        def dialog_callback(self, args):
+            ans = self.dialog.ans
+            self.dialog.close()
+            self.mm.dyn['flightmode'] = ans
+            args['callback']()
+
+        self.dialog = FlightModeSetWindow(self.main_window)
+        self.dialog.value_changed_signal.connect(
+        lambda: dialog_callback(self, args))
+        self.dialog.exec_()
+
+    def open_set_flight_direction_dialog(self, args):
+        def dialog_callback(self, args):
+            ans = self.dialog.ans
+            self.dialog.close()
+            self.mm.dyn['direction'] = ans
+            args['callback']()
+
+        self.dialog = FlightDirectionSetWindow(self.main_window)
+        self.dialog.value_changed_signal.connect(
+        lambda: dialog_callback(self, args))
+        self.dialog.exec_()
+
+    def open_set_flight_target_dialog(self, args):
+        def dialog_callback(self, args):
+            ans = self.dialog.ans
+            self.dialog.close()
+            self.mm.dyn['target'] = ans
+            args['callback']()
+
+        self.dialog = FlightTargetSetWindow(self.main_window)
+        self.dialog.value_changed_signal.connect(
+        lambda: dialog_callback(self, args))
+        self.dialog.exec_()
+
 # AdditionalThread is used for time consuming logic
 
 class AdditionalThread(QThread):
 
     port_dialog_signal = pyqtSignal(dict)
     set_antena_location_signal = pyqtSignal(dict)
+    set_flight_mode_signal = pyqtSignal(dict)
+    set_flight_target_signal = pyqtSignal(dict)
+    set_flight_direction_signal = pyqtSignal(dict)
+
     # AdditionalThread requires parrent (Main_Logic_Thread such as LiveFlight)
     # Every function run in this thread should be written is this class
     # and requires @inner_runner decorator to be executed properly by main loop
@@ -172,7 +216,7 @@ class AdditionalThread(QThread):
             last = self.parent.mm.dm.get_last(1)[0]['processed']
             if not last:
                 return
-                x, y = last['X'], last['Y']
+            x, y = last['X'], last['Y']
             try:
                 self.parent.main_window.rocket_map.map_view.findPoint(x, y, 13)
             except Exception as e:
@@ -198,6 +242,9 @@ class AdditionalThread(QThread):
         data = self.parent.mm.dyn['antena_location']['h'], code = 'ant_h')
         self.parent.main_window.antena_location_label.update_location(
         self.parent.mm.dyn['antena_location'])
+        self.parent.main_window.rocket_map.map_view.setAntenaPoint(
+        self.parent.mm.dyn['antena_location']['x'],
+        self.parent.mm.dyn['antena_location']['y'])
 
     @inner_runner
     def send_by_serial(self, *args, **kwargs):
@@ -220,6 +267,46 @@ class AdditionalThread(QThread):
         except Exception as e:
             print(f'[AddThr8] Failed to send msg: {msg} \n', e)
 
+    @inner_runner
+    def set_flight_mode_clicked(self, *args):
+        self.set_flight_mode_signal.emit(
+        {'callback':self.set_flight_mode})
+
+    # Action to do after the new flightmode is set
+    @inner_runner
+    def set_flight_mode(self, *args, **kwargs):
+        mode = self.parent.mm.dyn['flightmode']
+        try:
+            data = self.parent.mm.conf['flightmodes'][mode]
+        except Exception as e:
+            print(f'[AddThr9] Mode {mode} not found in configs!', e)
+            return
+
+        self.send_by_serial(data = data, code ='flightmode')
+
+    @inner_runner
+    def set_flight_target_clicked(self, *args):
+        self.set_flight_target_signal.emit(
+        {'callback':self.set_flight_target})
+
+    # Action to do after the new flightmode is set
+    @inner_runner
+    def set_flight_target(self, *args, **kwargs):
+        target = self.parent.mm.dyn['target']
+        self.send_by_serial(data = target['x'], code ='tar_x')
+        self.send_by_serial(data = target['y'], code ='tar_y')
+        self.send_by_serial(data = target['h'], code ='tar_h')
+
+    @inner_runner
+    def set_flight_direction_clicked(self, *args):
+        self.set_flight_direction_signal.emit(
+        {'callback':self.set_flight_direction})
+
+    # Action to do after the new flightmode is set
+    @inner_runner
+    def set_flight_direction(self, *args, **kwargs):
+        target = self.parent.mm.dyn['direction']
+        self.send_by_serial(data = target, code ='direction')
 
 # Class responible for presenting data in Graphical format
 # LiveFlightGui requires parrent (Main_Logic_Thread such as LiveFlight)
@@ -257,6 +344,13 @@ class LiveFlightGui(QRunnable):
         self.parent.af.find_point)
         self.parent.main_window.set_antena_loactio_button.clicked.connect(
         self.parent.af.set_antena_location_clicked)
+        self.parent.main_window.set_flight_mode_button.clicked.connect(
+        self.parent.af.set_flight_mode_clicked)
+        self.parent.main_window.set_destination_button.clicked.connect(
+        self.parent.af.set_flight_target_clicked)
+        self.parent.main_window.set_direction_button.clicked.connect(
+        self.parent.af.set_flight_direction_clicked)
+
 
         # Only functions inside inner loop are refreshed
         # ToDo: Check most efficent refresh time (if any sleep needed)
@@ -266,7 +360,7 @@ class LiveFlightGui(QRunnable):
             self.parent.main_window.plot2.update()
             self.update_serial_status()
             self.parent.main_window.data_set_widget.refresh()
-            time.sleep(0.1)
+            # time.sleep(0.1)
 
     # Updates status of device conected by serial port
     # It takes connection_status from logic thread
@@ -310,52 +404,14 @@ class LiveFlightLogic(QRunnable):
     def __init__(self, parent):
         super().__init__()
         self.parent = parent
-        self.angle = 0
-        self.last_angle = 0
-        self.left_motor = 50
-        self.right_motor = 50
-        self.left_key = False
-        self.right_key = False
-        self.left_key = False
-        self.up_key = False
-        self.down_key = False
-        self.power = 0
-        self.servo = 0
-        self.engines = 0
 
     def keyPressEvent(self, event):
-        if event.key() == Qt.Key_N:
-            self.left_key = True
-        elif event.key() == Qt.Key_M:
-            self.right_key = True
-        elif event.key() == Qt.Key_R:
-            if self.engines == 0:
-                self.engines = 1
-            else:
-                self.engines = 0
-            self.ser.add_to_outbuffer("m{}M".format(str(self.engines)))
-        elif event.key() == Qt.Key_Up:
-            self.up_key = True
-        elif event.key() == Qt.Key_Down:
-            self.down_key = True
-        elif event.key() == Qt.Key_D:
-            if self.servo == 0:
-                self.servo = 1
-            else:
-                self.servo = 0
-            self.ser.add_to_outbuffer("s{}S".format(str(self.servo)))
-
-
+        pass
+        # Might be useful in the future..
 
     def keyReleaseEvent(self, event):
-        if event.key() == Qt.Key_N:
-            self.left_key = False
-        elif event.key() == Qt.Key_M:
-            self.right_key = False
-        elif event.key() == Qt.Key_Up:
-            self.up_key = False
-        elif event.key() == Qt.Key_Down:
-            self.down_key = False
+        pass
+        # Might be useful in the future...
 
     @pyqtSlot()
     def run(self):
@@ -367,34 +423,6 @@ class LiveFlightLogic(QRunnable):
         self.parent.main_window.keyPressEvent = self.keyPressEvent
         self.parent.main_window.keyReleaseEvent = self.keyReleaseEvent
         step = 1
-        while True:
-            if self.left_key:
-                self.angle -= step
-            if self.right_key:
-                self.angle += step
-            if self.up_key and self.power<=100-step:
-                self.power +=step
-            if self.down_key and self.power>=step:
-                self.power -= step
-            self.angle = self.angle%360
-
-            if self.angle != self.last_angle:
-                self.ser.add_to_outbuffer("a{}A".format(str(self.angle)))
-                self.last_angle = self.angle
-
-
-            temp_text = 'l:{} r:{} p:{} a:{}'.format(
-            self.left_motor, self.right_motor, self.power, self.angle)
-            # self.parent.main_window.temp2.setText(temp_text)
-
-            l_out = int(self.left_motor*self.power/100)*2
-            r_out = int(self.right_motor*self.power/100)*2
-            #motbytes = bytes([0xFF, l_out, r_out, self.servo])
-            try:
-                self.ser.writeline(motbytes)
-            except Exception as e:
-                pass
-            time.sleep(0.1)
 
     def newDataCallback(self, data):
         new_data = self.parent.mm.dm.append(data)
@@ -418,7 +446,18 @@ class LiveFlightLogic(QRunnable):
             new_data['X'], new_data['Y'], RGBbyRSSI(new_data['rssi'])
             )
         except Exception as e:
-            print('[newDataCallback]',e)
+            print('[newDataCallback1]', e)
+
+        try:
+            if 'antena_location' in self.parent.mm.dyn:
+                x = self.parent.mm.dyn['antena_location']['x']
+                y = self.parent.mm.dyn['antena_location']['y']
+                angle = self.parent.mm.dm.get_last(1)[0]['rotor_horizontal']
+                print(x, y, angle)
+                self.parent.main_window.rocket_map.map_view.setAntenaDirection(
+                x, y, x, y)
+        except Exception as e:
+            print('[newDataCallback2]', e)
 
 lf = LiveFlight()
 lf.run()

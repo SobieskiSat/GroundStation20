@@ -6,6 +6,7 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 from PyQt5.QtQuickWidgets import QQuickWidget
+from PyQt5.QtGui import QFont
 import os
 import time
 
@@ -154,6 +155,80 @@ class PortSetWindow(AdditionalWindow):
         self.ans = p
         self.value_changed_signal.emit()
 
+class FlightModeSetWindow(AdditionalWindow):
+    value_changed_signal = pyqtSignal()
+    def __init__(self, *args):
+        super().__init__(*args)
+        self.label = QLabel('Choose flight mode:')
+        self.main_grid.addWidget(self.label, 1, 1)
+        self.setGeometry(300, 300, 450, 350)
+        self.ans = None
+
+        self.auto_button = QPushButton('Auto')
+        self.auto_button.clicked.connect(lambda: self.click_event('auto'))
+        self.main_grid.addWidget(self.auto_button, 2, 1)
+
+        self.target_button = QPushButton('Target')
+        self.target_button.clicked.connect(lambda: self.click_event('target'))
+        self.main_grid.addWidget(self.target_button, 3, 1)
+
+        self.direction_button = QPushButton('Direction')
+        self.direction_button.clicked.connect(lambda: self.click_event('direction'))
+        self.main_grid.addWidget(self.direction_button, 4, 1)
+
+        self.manual_button = QPushButton('Manual')
+        self.manual_button.clicked.connect(lambda: self.click_event('manual'))
+        self.main_grid.addWidget(self.manual_button, 5, 1)
+
+        self.terminate_button = QPushButton('Terminate')
+        self.terminate_button.clicked.connect(lambda: self.click_event('terminate'))
+        self.main_grid.addWidget(self.terminate_button, 6, 1)
+
+    def click_event(self, p):
+        self.ans = p
+        self.value_changed_signal.emit()
+
+class LocationInput(QWidget):
+    def __init__(self, name, val, type):
+        super().__init__()
+        self.name = name
+        self.type = type
+        self.main_grid = QGridLayout()
+        self.setLayout(self.main_grid)
+        self.name_label = QLabel(self.name)
+        self.main_grid.addWidget(self.name_label, 1, 1)
+        self.error_label = QLabel('')
+        self.main_grid.addWidget(self.error_label, 1, 3)
+        self.error_label.setStyleSheet('color: Red')
+        self.input_box = QLineEdit()
+        self.main_grid.addWidget(self.input_box, 1, 2)
+        self.input_box.textEdited.connect(self.checkType)
+
+        try:
+            val = str(val)
+            self.input_box.setText(val)
+        except Exception as e:
+            pass
+
+    def checkType(self):
+        txt = self.input_box.text()
+        flag = None
+        try:
+            txt = float(txt)
+            if self.type == 'cord_x' or self.type == 'cord_y':
+                if(txt <= -90 or txt >= 90): flag = 'Out_of_range'
+            if self.type == 'cord_h':
+                if (txt <= -200 or txt >= 8000): flag = 'Out_of_range'
+            if self.type == 'angle':
+                if(txt <0 or txt > 360): flag = 'Out_of_range'
+        except Exception as e:
+            flag = 'Invalid_Form'
+        if flag:
+            self.error_label.setText(flag)
+        else:
+            self.error_label.setText('')
+        return flag
+
 class AntenaLocationSetWindow(AdditionalWindow):
     value_changed_signal = pyqtSignal()
     def __init__(self, last = None, *args):
@@ -161,46 +236,6 @@ class AntenaLocationSetWindow(AdditionalWindow):
         self.ans = last
         if not last:
             self.ans = {'x':0, 'y':0, 'h':0}
-
-        class LocationInput(QWidget):
-            def __init__(self, name, val, type):
-                super().__init__(*args)
-                self.name = name
-                self.type = type
-                self.main_grid = QGridLayout()
-                self.setLayout(self.main_grid)
-                self.name_label = QLabel(self.name)
-                self.main_grid.addWidget(self.name_label, 1, 1)
-                self.error_label = QLabel('')
-                self.main_grid.addWidget(self.error_label, 1, 3)
-                self.error_label.setStyleSheet('color: Red')
-                self.input_box = QLineEdit()
-                self.main_grid.addWidget(self.input_box, 1, 2)
-                self.input_box.textEdited.connect(self.checkType)
-
-                try:
-                    val = str(val)
-                    self.input_box.setText(val)
-                except Exception as e:
-                    pass
-
-            def checkType(self):
-                txt = self.input_box.text()
-                flag = None
-                try:
-                    txt = float(txt)
-                    if self.type == 'cord_x' or self.type == 'cord_y':
-                        if(txt <= -90 or txt >= 90): flag = 'Out_of_range'
-                    if self.type == 'cord_h':
-                        if (txt <= -200 or txt >= 8000): flag = 'Out_of_range'
-                except Exception as e:
-                    flag = 'Invalid_Form'
-                if flag:
-                    self.error_label.setText(flag)
-                else:
-                    self.error_label.setText('')
-                return flag
-
 
         self.input_x = LocationInput('X', 0.0, 'cord_x')
         self.input_y = LocationInput('Y', 0.0, 'cord_y')
@@ -237,6 +272,75 @@ class AntenaLocationSetWindow(AdditionalWindow):
         self.value_changed_signal.emit()
 
 
+class FlightTargetSetWindow(AdditionalWindow):
+    value_changed_signal = pyqtSignal()
+    def __init__(self, last = None, *args):
+        super().__init__(*args)
+        self.ans = last
+        if not last:
+            self.ans = {'x':0, 'y':0, 'h':0}
+
+        self.input_x = LocationInput('X', 0.0, 'cord_x')
+        self.input_y = LocationInput('Y', 0.0, 'cord_y')
+        self.input_h = LocationInput('H', 0.0, 'cord_h')
+        self.input_x.input_box.textEdited.connect(self.edit_event)
+        self.input_y.input_box.textEdited.connect(self.edit_event)
+        self.input_h.input_box.textEdited.connect(self.edit_event)
+        self.main_grid.addWidget(self.input_x, 1, 3)
+        self.main_grid.addWidget(self.input_y, 2, 3)
+        self.main_grid.addWidget(self.input_h, 3, 3)
+        self.accept_button = QPushButton('SAVE')
+        self.main_grid.addWidget(self.accept_button, 4, 3)
+        self.accept_button.clicked.connect(self.save_clicked)
+        self.edit_event()
+
+        self.setGeometry(300, 300, 450, 350)
+
+    def edit_event(self):
+        correct_flag = True
+        if self.input_x.checkType() != None:
+            correct_flag = False
+        if self.input_y.checkType() != None:
+            correct_flag = False
+        if self.input_h.checkType() != None:
+            correct_flag = False
+        self.accept_button.setEnabled(correct_flag)
+
+    def save_clicked(self):
+        self.ans = {
+         'x':self.input_x.input_box.text(),
+         'y':self.input_y.input_box.text(),
+         'h':self.input_h.input_box.text()
+        }
+        self.value_changed_signal.emit()
+
+class FlightDirectionSetWindow(AdditionalWindow):
+    value_changed_signal = pyqtSignal()
+    def __init__(self, last = None, *args):
+        super().__init__(*args)
+        self.ans = last
+        if not last:
+            self.ans = 0
+
+        self.input_a = LocationInput('A', 0.0, 'angle')
+        self.input_a.input_box.textEdited.connect(self.edit_event)
+        self.main_grid.addWidget(self.input_a, 1, 3)
+        self.accept_button = QPushButton('SAVE')
+        self.main_grid.addWidget(self.accept_button, 4, 3)
+        self.accept_button.clicked.connect(self.save_clicked)
+        self.edit_event()
+
+        self.setGeometry(300, 300, 450, 350)
+
+    def edit_event(self):
+        correct_flag = True
+        if self.input_a.checkType() != None:
+            correct_flag = False
+        self.accept_button.setEnabled(correct_flag)
+
+    def save_clicked(self):
+        self.ans = self.input_a.input_box.text()
+        self.value_changed_signal.emit()
 
 class AntenaLocationLabel(QLabel):
     def __init__(self):
@@ -268,11 +372,18 @@ class DataPresentationWidget(QWidget):
         super().__init__()
         self.main_grid = QGridLayout()
         self.setLayout(self.main_grid)
+        name_font = QFont("Times", 10, QFont.Bold)
+        data_font = QFont("Times", 8, QFont.Bold)
+        time_font = QFont("Times", 7)
+        time_font.setItalic(True)
         self.name_label = QLabel()
+        self.name_label.setFont(name_font)
         self.main_grid.addWidget(self.name_label, 1, 1)
         self.data_label = QLabel()
+        self.data_label.setFont(data_font)
         self.main_grid.addWidget(self.data_label, 2, 1)
         self.update_time_label = QLabel()
+        self.update_time_label.setFont(time_font)
         self.main_grid.addWidget(self.update_time_label, 3, 1)
 
 
@@ -293,7 +404,7 @@ class DataSetWidget(QWidget):
         self.widgets  = {}
         self.data = {}
         self.width = 3
-        self.widgets_limit = 12
+        self.widgets_limit = 15
         self.setLayout(self.main_grid)
         self.avalible_widgets = []
         for w in range(self.widgets_limit):

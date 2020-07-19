@@ -50,7 +50,6 @@ class SerialCommunicator(QRunnable):
     def add_to_outbuffer(self, *args):
         for a in args:
             self.buffer.add(str(a))
-        print(self.buffer)
 
     def connection_status(self):
         if not hasattr(self, 'serial'):
@@ -68,11 +67,12 @@ class SerialCommunicator(QRunnable):
         while self.main_loop:
             self.run_condition = True
             while self.run_condition and hasattr(self, 'serial'):
+                print('')
                 new = self.readline()
                 if new:
                     for f in self.callbackFuns:
                         f(new)
-                if self.buffer:
+                if len(self.buffer)>0:
                     line = '<'
                     for b in self.buffer:
                         line += b

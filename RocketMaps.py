@@ -42,7 +42,20 @@ class Map(QtWebEngineWidgets.QWebEngineView):
         except Exception as e:
             print('[MAP2]', e)
 
+    def setAntenaPoint(self, x, y):
+        comand = f'setAntenaLocation("{x}", "{y}");'
+        try:
+            self.page().runJavaScript(comand)
+        except Exception as e:
+            print('[MAP3]', e)
 
+    def setAntenaDirection(self, x, y, a, b):
+        comand = f'setAntenaDirection("{x}", "{y}", "{a}", "{b}");'
+        try:
+            self.page().runJavaScript(comand)
+        except Exception as e:
+            print('[MAP4]', e)
+            
 # app=QApplication(sys.argv)
 # win=RocketMap()
 # win.show()

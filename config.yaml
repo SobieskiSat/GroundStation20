@@ -1,5 +1,9 @@
 {'structure' :
   ['time','rssi','x','y', 'h', 'temperature', 'pressure', 'pm25', 'pm10'],
 'new_structure' :
-  {'T':'temperature', 'P':'pressure', 'X':'X', 'Y':'Y','A':'a', 'B':'b', 'C':'c', 'R':'rssi'},
-'send_code' : {'ant_x':'j', 'ant_y':'k', 'ant_h':'l'}}
+  {'T':'temperature', 'P':'pressure', 'N':'X', 'E':'Y', 'R':'rssi',
+  'A':'altitude', 'H':'rotor_horizontal'},
+'send_code' : {'ant_x':'j', 'ant_y':'k', 'ant_h':'l', 'flightmode':'o',
+'tar_x':'N', 'tar_y':'E', 'tar_h':'A', 'direction':'D'},
+'flightmodes':{'auto':'0', 'target':'1', 'direction':'2', 'manual':'3',
+'terminate':'31'}}

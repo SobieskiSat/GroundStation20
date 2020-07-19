@@ -54,16 +54,38 @@
 	var pathLayer = L.layerGroup().addTo(mymap);
 	function addPointToPath(x, y, color){
 		pathLayer.addLayer(L.circle([x,y],{
-			radius : 6,
-			color : color
+			radius : 3,
+			color : color,
+			fillOpacity: 1,
 		}));
 	}
-
+	var antenaPoint = null;
+	var atenaIndicator = null;
 	function clearPath(){
 		pathLayer.clearLayers();
 	}
 
+	function setAntenaLocation(x, y){
+		if (antenaPoint != null){
+			antenaPoint.remove()
+		}
+		antenaPoint = L.circle([x, y], {
+     color: '#49549e',
+     fillColor: '#49549e',
+     fillOpacity: 1,
+     radius: 5
+		 }).addTo(mymap);
+	}
 
+	function setAntenaDirection(x, y, a, b){
+		if (antenaIndicator != null){
+			antenaIndicator.remove()
+		}
+			antenaIndicator = L.polygon([
+    	[x, y],
+    	[a, b]
+			]).addTo(mymap);
+	}
 
 	//For left-click
 	var popup = L.popup();

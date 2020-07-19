@@ -18,6 +18,7 @@ class DataManager:
         self.file_name_prefix = file_name
         self.obtain_file_num()
         self.file = open(self.file_dir, 'a+')
+        self.inner_data_arenger = self.new_data_arranger('altitude')
 
     @property
     def file_dir(self):
@@ -35,12 +36,20 @@ class DataManager:
         try:
             new_data = str(value)
             new_data = self.data_processor.interpreter(new_data, timestamp)
+
+            prev_altitude = self.inner_data_arenger.get_data(1)
+            if len(prev_altitude[0]) > 0 and 'altitude' in new_data:
+                vertical_velocity = prev_altitude[0][0] - new_data['altitude']
+                new_data['vertical_velocity'] = round(vertical_velocity, 2)
+
         except Exception as e:
             print('[DM]', e)
-
-        self.data.append({'time':timestamp, 'raw':value, 'processed':new_data})
-        self.__write_data('{}@{}\n'.format(timestamp, value))
-        return new_data
+        try:
+            self.data.append({'time':timestamp, 'raw':value, 'processed':new_data})
+            self.__write_data('{}@{}\n'.format(timestamp, value))
+            return new_data
+        except Exception as e:
+            print('[DM2]', e)
 
     def __write_data(self, data):
         self.file.write(data)
@@ -101,7 +110,6 @@ class DataProcessor:
     def interpreter_old(self, data):
         if not self.structure:
             return {}
-        #structure=('time','rssi','x','y', 'h', 'temperature', 'pressure', 'pm25', 'pm10')
         new_data = data.split('_')
         new_data = list(map(float, new_data))
         structure = self.structure
@@ -192,17 +200,3 @@ class ConfigData:
 
     def __contains__(self, key):
         return key in self.conf
-'''
-dp = DataProcessor()
-dp.set_structure({'T':'temperature', 'P':'pressure'})
-print(dp.interpreter('t12Tp17P'))
-dm = DataManager()
-dm.data_processor.set_structure({'T':'temperature', 'P':'pressure',
-'X':'X', 'Y':'Y', '@':'time'})
-dm.append('t12T')
-dm.append('t17Tp189P')
-dm.append('p92P')
-print(dm.get_last())
-da = dm.new_data_arranger('time')
-print(da(1))
-'''
