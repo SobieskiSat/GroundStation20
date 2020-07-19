@@ -2,6 +2,7 @@ from serial import Serial, portNotOpenError
 import serial.tools.list_ports as lp
 from PyQt5.QtCore import QRunnable, pyqtSlot
 import os
+from Tests import TimeTest
 
 class SerialCommunicator(QRunnable):
     def __init__(self, baudrate = 115200, timeout = 0.03, **kwargs):
@@ -28,9 +29,14 @@ class SerialCommunicator(QRunnable):
         try:
             if not self.serial.is_open:
                 return None
-            data=self.serial.readline()
-            #return data
-            return str(data)[2:-4]
+            data = self.serial.read(self.serial.in_waiting)
+            data = str(data)[2:-2]
+            bg = data.rfind('<')
+            lg = data.rfind('>')
+            data = data[bg:lg+1]
+            if data:
+                return data
+            #return str(data)[2:-4]
         except Exception as e:
              print('[Serial3]', e)
         except portNotOpenError as e:
@@ -67,7 +73,6 @@ class SerialCommunicator(QRunnable):
         while self.main_loop:
             self.run_condition = True
             while self.run_condition and hasattr(self, 'serial'):
-                print('')
                 new = self.readline()
                 if new:
                     for f in self.callbackFuns:

@@ -68,8 +68,6 @@ class LiveFlight():
             args['callback']()
 
         self.dialog = AntenaLocationSetWindow(self.main_window)
-        if 'antena_location' in self.mm.dyn:
-            self.dialog.set_current_location(self.mm.dyn['antena_location'])
         self.dialog.value_changed_signal.connect(
         lambda: dialog_callback(self, args))
         self.dialog.exec_()
@@ -205,7 +203,7 @@ class AdditionalThread(QThread):
         self.parent.main_window.command_box.setText('')
         try:
             self.parent.log.ser.writeline(text)
-        except Exception as e:
+        except Exception as  e:
             print('[AddThr5] Wysyłanie nie powiodło się. \n', e)
 
     # Changes map focus to the last position of satelite
@@ -453,7 +451,6 @@ class LiveFlightLogic(QRunnable):
                 x = self.parent.mm.dyn['antena_location']['x']
                 y = self.parent.mm.dyn['antena_location']['y']
                 angle = self.parent.mm.dm.get_last(1)[0]['rotor_horizontal']
-                print(x, y, angle)
                 self.parent.main_window.rocket_map.map_view.setAntenaDirection(
                 x, y, x, y)
         except Exception as e:

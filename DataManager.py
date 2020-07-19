@@ -30,6 +30,8 @@ class DataManager:
             self.file_num += 1
 
     def append(self, value):
+        if len(value)==0:
+            return
         timestamp = time.time()
         if len(self.data) >= self.max:
             self.data.pop(0)
@@ -118,8 +120,8 @@ class DataProcessor:
     def interpreter(self, data, timestamp):
         if not hasattr(self, 'start_time'):
             self.start_time = timestamp
+        data = data[1:-1]
         ans = self.last_data.copy()
-        data = data[:-1]
         while data != '':
             big_c = str(data[0]).upper()
             res, data = (data[1:]).split(big_c)
