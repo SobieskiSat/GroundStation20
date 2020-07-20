@@ -17,6 +17,7 @@ class DataManager:
                 print('[DM] mkdir:', e)
         self.file_name_prefix = file_name
         self.obtain_file_num()
+        print('File saved as', self.file_dir)
         self.file = open(self.file_dir, 'a+')
         self.inner_data_arenger = self.new_data_arranger('altitude')
 
